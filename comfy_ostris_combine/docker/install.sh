@@ -1,25 +1,19 @@
 #!/bin/bash
 set -e
 
-# Update and install system dependencies
-echo "Installing system dependencies..."
+# ================================================
+# OSTRIS ai-toolkit 설치 스크립트
+# 환경: CUDA 12.1 + Ubuntu 20.04 + Python 3.10.6
+# (Dockerfile에서 이미 설치된 항목은 스킵)
+# ================================================
+
+# Update and install OSTRIS 추가 시스템 의존성
+# (git, curl, wget, ffmpeg, build-essential 등은 Dockerfile에서 이미 설치됨)
+echo "Installing additional system dependencies for OSTRIS..."
 apt-get update && apt-get install --no-install-recommends -y \
-    git \
-    curl \
-    build-essential \
     cmake \
-    wget \
-    python3.12 \
-    python3-pip \
-    python3-dev \
-    python3-setuptools \
-    python3-wheel \
-    python3-venv \
-    ffmpeg \
     tmux \
     htop \
-    nvtop \
-    python3-opencv \
     openssh-client \
     openssh-server \
     openssl \
@@ -28,33 +22,23 @@ apt-get update && apt-get install --no-install-recommends -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install nodejs
-echo "Installing Node.js..."
-curl -sL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
-    bash nodesource_setup.sh && \
-    apt-get update && \
-    apt-get install -y nodejs && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-rm -f nodesource_setup.sh
+# Python / pip / Node.js 는 Dockerfile에서 이미 설치됨 (스킵)
+# - Python 3.10.6 (소스 빌드)
+# - Node.js 18
+# - pip (python3.10 altinstall 포함)
 
-# Set aliases for python
-if [ ! -f /usr/bin/python ]; then
-    ln -s /usr/bin/python3 /usr/bin/python
-fi
-
-# Install pytorch
-echo "Installing PyTorch..."
-pip install --no-cache-dir torch==2.9.1 torchvision==0.24.1 torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu128 --break-system-packages
+# Install pytorch (CUDA 12.1 호환 버전)
+echo "Installing PyTorch (CUDA 12.1 compatible)..."
+pip install --no-cache-dir torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121
 
 # Install Python dependencies
-echo "Installing Python dependencies..."
+echo "Installing OSTRIS Python dependencies..."
 cd /workspace/ostris
-pip install --no-cache-dir --break-system-packages -r requirements.txt && \
-    pip install setuptools==69.5.1 --no-cache-dir --break-system-packages
+pip install --no-cache-dir -r requirements.txt && \
+    pip install setuptools==69.5.1 --no-cache-dir
 
 # Build UI
-echo "Building UI..."
+echo "Building OSTRIS UI..."
 cd /workspace/ostris/ui
 npm install && \
     npm run build && \

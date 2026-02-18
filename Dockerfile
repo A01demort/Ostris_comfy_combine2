@@ -32,10 +32,7 @@ RUN wget https://www.python.org/ftp/python/3.10.6/Python-3.10.6.tgz && \
 WORKDIR /workspace
 RUN mkdir -p /workspace && chmod -R 777 /workspace && \
     chown -R root:root /workspace && \
-    git clone https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI && \
-    cd /workspace/ComfyUI && \
-    git fetch --tags && \
-    git checkout v0.7.0
+    git clone https://github.com/A01demort/ComfyUI.git /workspace/ComfyUI
 
 WORKDIR /workspace/ComfyUI
 

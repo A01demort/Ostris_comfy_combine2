@@ -24,7 +24,7 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
     echo '📦 파이썬 패키지 설치'
 
     pip install --no-cache-dir \
-        GitPython onnx onnxruntime opencv-python-headless tqdm requests \
+        GitPython onnx onnxruntime opencv-python tqdm requests \
         scikit-image piexif packaging transformers accelerate peft sentencepiece \
         protobuf scipy einops pandas matplotlib imageio[ffmpeg] pyzbar pillow numba \
         gguf diffusers insightface dill taichi pyloudnorm || echo '⚠️ 일부 pip 설치 실패'
