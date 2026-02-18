@@ -30,9 +30,9 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
 
     pip install --no-cache-dir \
         GitPython onnx onnxruntime opencv-python tqdm requests \
-        scikit-image piexif packaging transformers accelerate peft sentencepiece \
-        protobuf scipy einops pandas matplotlib imageio[ffmpeg] pyzbar pillow numba \
-        gguf diffusers insightface dill taichi pyloudnorm || echo '⚠️ 일부 pip 설치 실패'
+        scikit-image piexif packaging \
+        protobuf pandas imageio[ffmpeg] pyzbar pillow numba \
+        gguf insightface dill taichi pyloudnorm || echo '⚠️ 일부 pip 설치 실패'
 
     pip install timm || echo '⚠️ timm 실패'
     pip install ultralytics || echo '⚠️ ultralytics 실패'
