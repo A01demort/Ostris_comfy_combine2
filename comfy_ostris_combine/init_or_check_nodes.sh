@@ -19,10 +19,10 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
     pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121 || echo '⚠️ Torch 재설치 실패'
 
     # ComfyUI 필수 의존성 설치 (sqlalchemy, alembic 등)
-    # [중요] transformers>=4.50은 torchao 0.7+ API를 호출 → torchao 0.5.0과 충돌
-    # → transformers를 제외하고 설치 후 호환 버전(4.49.0) 별도 설치
+    # [중요] ComfyUI requirements.txt에 버전 미지정 torch/torchaudio/torchvision/transformers 있음
+    # → 이미 설치된 호환 버전을 덮어쓰지 않도록 제외하고 설치
     if [ -f /workspace/ComfyUI/requirements.txt ]; then
-        grep -v '^transformers' /workspace/ComfyUI/requirements.txt | pip install -r /dev/stdin || echo '⚠️ ComfyUI requirements 설치 실패'
+        grep -v -E '^(torch|torchvision|torchaudio|transformers)([><=[:space:]]|$)' /workspace/ComfyUI/requirements.txt | pip install -r /dev/stdin || echo '⚠️ ComfyUI requirements 설치 실패'
         pip install transformers==4.49.0 || echo '⚠️ transformers 설치 실패'
     fi
 
@@ -40,8 +40,7 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
     pip install timm || echo '⚠️ timm 실패'
     pip install ultralytics || echo '⚠️ ultralytics 실패'
     pip install ftfy || echo '⚠️ ftfy 실패'
-    pip install bitsandbytes xformers || echo '⚠️ bitsandbytes 또는 xformers 설치 실패'
-    pip install bitsandbytes xformers || echo '⚠️ bitsandbytes 또는 xformers 설치 실패'
+    pip install bitsandbytes xformers==0.0.28.post1 || echo '⚠️ bitsandbytes 또는 xformers 설치 실패'
     pip install sageattention || echo '⚠️ sageattention 설치 실패'
     
     # [중요] 모든 필수 패키지 설치 시도가 끝났을 때만 마커 생성

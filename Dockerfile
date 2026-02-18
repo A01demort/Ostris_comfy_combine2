@@ -37,10 +37,10 @@ RUN mkdir -p /workspace && chmod -R 777 /workspace && \
 WORKDIR /workspace/ComfyUI
 
 # ComfyUI 필수 의존성 설치 (PyTorch CUDA 12.1 호환 버전 먼저 설치 후 나머지)
-# [중요] transformers>=4.50은 torchao 0.7+ API를 호출하여 torchao 0.5.0과 충돌
-# → transformers를 제외하고 설치 후 호환 버전(4.49.0)을 별도 설치
+# [중요] ComfyUI requirements.txt에 버전 미지정 torch/torchaudio/torchvision/transformers가 있음
+# → 이미 설치된 호환 버전을 덮어쓰지 않도록 제외하고 설치
 RUN pip install --no-cache-dir torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121 && \
-    grep -v '^transformers' requirements.txt | pip install --no-cache-dir -r /dev/stdin && \
+    grep -v -E '^(torch|torchvision|torchaudio|transformers)([><=\s]|$)' requirements.txt | pip install --no-cache-dir -r /dev/stdin && \
     pip install --no-cache-dir transformers==4.49.0
 
 # Node.js 18 설치 (기존 nodejs 제거 후)
