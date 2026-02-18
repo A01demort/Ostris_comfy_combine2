@@ -36,6 +36,10 @@ RUN mkdir -p /workspace && chmod -R 777 /workspace && \
 
 WORKDIR /workspace/ComfyUI
 
+# ComfyUI 필수 의존성 설치 (PyTorch CUDA 12.1 호환 버전 먼저 설치 후 나머지)
+RUN pip install --no-cache-dir torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121 && \
+    pip install --no-cache-dir -r requirements.txt
+
 # Node.js 18 설치 (기존 nodejs 제거 후)
 RUN apt-get remove -y nodejs npm && \
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \

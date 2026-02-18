@@ -18,6 +18,11 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
     # (이전 2.1.2는 너무 구버전이라 다른 패키지가 Torch만 몰래 업그레이드해서 깨짐)
     pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121 || echo '⚠️ Torch 재설치 실패'
 
+    # ComfyUI 필수 의존성 설치 (sqlalchemy, alembic 등)
+    if [ -f /workspace/ComfyUI/requirements.txt ]; then
+        pip install -r /workspace/ComfyUI/requirements.txt || echo '⚠️ ComfyUI requirements 설치 실패'
+    fi
+
     # 필수 의존성 및 누락 패키지(pydantic-settings) 추가
     pip install torchsde av pydantic-settings || echo '⚠️ 초기 의존성 설치 실패'
 
