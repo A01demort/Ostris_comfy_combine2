@@ -1,0 +1,133 @@
+```markdown
+# ComfyUI + OSTRIS Docker 통합 정리
+
+---
+
+## 1. 목적
+
+- 현재 `ostris`와 `40_scail` GHCR 파일이 분리되어 있음
+- 이를 **ComfyUI Docker 기반으로 하나로 통합**
+- Dockerfile은 하나만 사용
+- 포트 / EXPOSE / 기타 설정 절대 변경 금지
+- 모든 작업 완료 후 `Startup+banner.sh` 반드시 실행
+- 에러 절대 발생하면 안 됨
+
+---
+
+## 2. 폴더 구조 변경
+
+### 기존 폴더
+- `40_scail`
+- `testing_ostris-main`
+
+### 처리
+
+- 위 두 폴더 삭제
+- `40_scail` 내부 파일을 밖으로 꺼내서  
+  `testing_ostris-main` 쪽으로 이동
+- 이후 전체를 하나로 정리
+
+---
+
+## 3. 최종 폴더 구조
+
+```
+
+Dockerfile   ← 반드시 최상위 (폴더 안에 포함되면 안 됨)
+
+comfy_ostris_combine/
+│
+├── ComfyUI 관련 내용
+├── OSTRIS 전체 구조 (그대로 유지)
+├── install.sh
+├── Startup+banner.sh
+└── 기타 필요한 파일들
+
+```
+
+### 조건
+
+- Dockerfile은 `comfy_ostris_combine` 안에 두면 안 됨
+- 반드시 루트 최상위에 위치
+- 저장 경로는 `/workspace` 기준
+- Dockerfile은 하나만 존재
+
+---
+
+## 4. 설치 순서 (중요)
+
+1. ComfyUI 먼저 설치
+2. Custom Nodes 설치
+3. 그 다음 OSTRIS 설치
+4. 모든 작업 완료 후 `Startup+banner.sh` 실행
+
+---
+
+## 5. OSTRIS 관련 조건
+
+- 폴더 구조 절대 변경 금지
+- 이전에 발생했던 `message.txt` 오류 재발 방지
+- install.sh 수정 필요
+
+### install.sh 수정사항
+
+- reactor 관련 onnxmodel 삭제
+- checkout 사용 금지
+- message.txt 생성/참조 코드 제거
+
+---
+
+## 6. Custom Nodes Git 주소 통일 (checkout 금지)
+
+```
+
+[https://github.com/A01demort/ComfyUI.git](https://github.com/A01demort/ComfyUI.git)
+[https://github.com/A01demort/ComfyUI-Manager.git](https://github.com/A01demort/ComfyUI-Manager.git)
+[https://github.com/A01demort/ComfyUI_LayerStyle.git](https://github.com/A01demort/ComfyUI_LayerStyle.git)
+[https://github.com/A01demort/ComfyUI-VideoHelperSuite.git](https://github.com/A01demort/ComfyUI-VideoHelperSuite.git)
+[https://github.com/A01demort/comfyui_controlnet_aux.git](https://github.com/A01demort/comfyui_controlnet_aux.git)
+[https://github.com/A01demort/rgthree-comfy.git](https://github.com/A01demort/rgthree-comfy.git)
+[https://github.com/A01demort/ComfyUI-Custom-Scripts.git](https://github.com/A01demort/ComfyUI-Custom-Scripts.git)
+[https://github.com/A01demort/ComfyUI-Impact-Pack.git](https://github.com/A01demort/ComfyUI-Impact-Pack.git)
+[https://github.com/A01demort/ComfyUI-Frame-Interpolation.git](https://github.com/A01demort/ComfyUI-Frame-Interpolation.git)
+[https://github.com/A01demort/was-node-suite-comfyui.git](https://github.com/A01demort/was-node-suite-comfyui.git)
+[https://github.com/A01demort/ComfyUI-KJNodes.git](https://github.com/A01demort/ComfyUI-KJNodes.git)
+[https://github.com/A01demort/ComfyUI_essentials.git](https://github.com/A01demort/ComfyUI_essentials.git)
+[https://github.com/A01demort/ComfyUI_Comfyroll_CustomNodes.git](https://github.com/A01demort/ComfyUI_Comfyroll_CustomNodes.git)
+[https://github.com/A01demort/ComfyUI-GGUF.git](https://github.com/A01demort/ComfyUI-GGUF.git)
+[https://github.com/A01demort/ComfyUI-Easy-Use.git](https://github.com/A01demort/ComfyUI-Easy-Use.git)
+
+```
+
+- 기존 주석은 그대로 유지
+
+---
+
+## 7. Dockerfile 조건
+
+- ComfyUI 필수 구성 삭제 금지
+- 포트 수정 금지
+- EXPOSE 변경 금지
+- WORKDIR는 `/workspace`
+- ComfyUI 중심으로 구성 후 OSTRIS 결합
+- 최종 실행은 `Startup+banner.sh`
+
+---
+
+## 8. 기타
+
+- `.dockerignore`, `.gitignore` 필요 없으면 삭제
+- GitHub 업로드 시 한 번에 모두 올라가야 함
+- Dockerfile은 반드시 최상위
+
+---
+
+## 최종 목표
+
+- Dockerfile 최상위 배치
+- `comfy_ostris_combine` 폴더 하나만 존재
+- ComfyUI → OSTRIS 순서 유지
+- message.txt 오류 없음
+- Startup 배너 정상 출력
+- 포트/EXPOSE 변경 없음
+```
