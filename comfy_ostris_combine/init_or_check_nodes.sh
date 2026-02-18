@@ -19,8 +19,11 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
     pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121 || echo '⚠️ Torch 재설치 실패'
 
     # ComfyUI 필수 의존성 설치 (sqlalchemy, alembic 등)
+    # [중요] transformers>=4.50은 torchao 0.7+ API를 호출 → torchao 0.5.0과 충돌
+    # → transformers를 제외하고 설치 후 호환 버전(4.49.0) 별도 설치
     if [ -f /workspace/ComfyUI/requirements.txt ]; then
-        pip install -r /workspace/ComfyUI/requirements.txt || echo '⚠️ ComfyUI requirements 설치 실패'
+        grep -v '^transformers' /workspace/ComfyUI/requirements.txt | pip install -r /dev/stdin || echo '⚠️ ComfyUI requirements 설치 실패'
+        pip install transformers==4.49.0 || echo '⚠️ transformers 설치 실패'
     fi
 
     # 필수 의존성 및 누락 패키지(pydantic-settings) 추가
