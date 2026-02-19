@@ -5,7 +5,7 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
 # ================================
 # 1단계: 최소 시스템 패키지만 설치 (빌드 경량화)
-# Ubuntu 24.04 = Python 3.12 기본 내장 → python3.12 별도 설치 불필요
+# Ubuntu 24.04 = Python 3.12 기본 내장
 # 무거운 패키지(nvtop, cmake, openssh 등)는 런타임(init)에서 설치
 # ================================
 RUN apt-get update && apt-get install --no-install-recommends -y \
@@ -44,6 +44,7 @@ COPY comfy_ostris_combine/init_or_check_nodes.sh /workspace/A1/init_or_check_nod
 COPY comfy_ostris_combine/Startup+banner.sh      /workspace/A1/Startup+banner.sh
 COPY comfy_ostris_combine/Wan2.1_Vace_a1.sh      /workspace/A1/Wan2.1_Vace_a1.sh
 COPY comfy_ostris_combine/SCAIL_down_a1.sh       /workspace/A1/SCAIL_down_a1.sh
+COPY comfy_ostris_combine/start_services.sh      /workspace/A1/start_services.sh
 
 COPY comfy_ostris_combine/ /workspace/ostris/
 COPY comfy_ostris_combine/docker/start.sh /workspace/ostris/start.sh
@@ -53,6 +54,7 @@ RUN chmod +x \
     /workspace/A1/Startup+banner.sh \
     /workspace/A1/Wan2.1_Vace_a1.sh \
     /workspace/A1/SCAIL_down_a1.sh \
+    /workspace/A1/start_services.sh \
     /workspace/ostris/docker/install.sh \
     /workspace/ostris/start.sh
 
@@ -62,16 +64,12 @@ EXPOSE 8188
 EXPOSE 8888
 EXPOSE 8675
 
-# JSON 형식 CMD (OS signal 안전)
+# ================================
+# CMD: init 완료 후 exec 새 bash로 서비스 시작
+# → PATH/pip 설치 경로가 완전히 반영된 환경에서 실행됨
+# ================================
 CMD ["/bin/bash", "-c", "\
 echo '🌀 A1(AI는 에이원) : https://www.youtube.com/@A01demort' && \
 /workspace/A1/init_or_check_nodes.sh && \
-echo '✅ 의존성 확인 완료 - 서비스 시작' && \
-jupyter lab --ip=0.0.0.0 --port=8888 --allow-root \
-  --ServerApp.root_dir=/workspace \
-  --ServerApp.token='' --ServerApp.password='' & \
-python -u /workspace/ComfyUI/main.py --listen 0.0.0.0 --port=8188 \
-  --front-end-version Comfy-Org/ComfyUI_frontend@1.37.2 & \
-cd /workspace/ostris/ui && npm run start & \
-/workspace/A1/Startup+banner.sh & \
-wait"]
+echo '✅ 의존성 확인 완료 - 새 환경으로 서비스 시작' && \
+exec /bin/bash /workspace/A1/start_services.sh"]
