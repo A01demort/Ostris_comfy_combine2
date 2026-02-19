@@ -108,13 +108,19 @@ for d in */; do
     fi
 
     echo "📦 $d 의존성 설치 중..."
-    if pip install -r "$req_file"; then
+    # [중요] torch/torchvision/torchaudio 제외하고 설치 (버전 보호)
+    if grep -v -E '^(torch|torchvision|torchaudio)([><=[:space:]]|$)' "$req_file" | pip install -r /dev/stdin; then
       touch "$marker_file"
     else
       echo "⚠️ $d 의존성 설치 실패 (무시하고 진행)"
     fi
   fi
 done
+
+# 🔒 [최종 안전장치 2] 커스텀 노드 설치 후에도 torch 재고정
+# (커스텀 노드 requirements.txt가 torch를 업그레이드했을 경우 대비)
+echo '🔒 커스텀 노드 설치 후 Torch 버전 최종 재고정...'
+pip install --force-reinstall torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121 || echo '⚠️ Torch 최종 재고정 실패'
 
 echo "✅ 모든 커스텀 노드 의존성 복구 완료"
 echo "🚀 다음 단계로 넘어갑니다"
