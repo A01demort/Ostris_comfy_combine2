@@ -1,115 +1,117 @@
-FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu20.04
+FROM nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PIP_CACHE_DIR=/workspace/.cache/pip
-
-# 시스템 패키지 및 빌드 도구 + Jupyter 필수 툴 설치
-RUN apt-get update && apt-get install -y \
-    git wget curl ffmpeg libgl1 \
-    build-essential libssl-dev zlib1g-dev libbz2-dev \
-    libreadline-dev libsqlite3-dev libncurses5-dev \
-    libncursesw5-dev xz-utils tk-dev libffi-dev \
-    liblzma-dev software-properties-common \
-    locales sudo tzdata xterm nano \
-    nodejs npm && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# 정확한 Python 3.10.6 소스 설치 + pip 심볼릭 링크 추가
-WORKDIR /tmp
-RUN wget https://www.python.org/ftp/python/3.10.6/Python-3.10.6.tgz && \
-    tar xzf Python-3.10.6.tgz && cd Python-3.10.6 && \
-    ./configure --enable-optimizations && \
-    make -j$(nproc) && make altinstall && \
-    ln -sf /usr/local/bin/python3.10 /usr/bin/python && \
-    ln -sf /usr/local/bin/python3.10 /usr/bin/python3 && \
-    ln -sf /usr/local/bin/pip3.10 /usr/bin/pip && \
-    ln -sf /usr/local/bin/pip3.10 /usr/local/bin/pip && \
-    cd / && rm -rf /tmp/*
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
 # ================================
-# 1단계: ComfyUI 설치 (먼저)
+# 1단계: 시스템 패키지 설치
+# ================================
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    git \
+    curl \
+    wget \
+    build-essential \
+    cmake \
+    ffmpeg \
+    libgl1 \
+    python3.12 \
+    python3-pip \
+    python3-dev \
+    python3-setuptools \
+    python3-wheel \
+    python3-venv \
+    python3-opencv \
+    tmux \
+    htop \
+    nvtop \
+    openssh-client \
+    openssh-server \
+    openssl \
+    rsync \
+    unzip \
+    locales \
+    sudo \
+    tzdata \
+    nano \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python 심볼릭 링크 설정
+RUN if [ ! -f /usr/bin/python ]; then ln -s /usr/bin/python3 /usr/bin/python; fi
+
+# ================================
+# 2단계: Node.js 23.x 설치
+# ================================
+RUN curl -sL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
+    bash nodesource_setup.sh && \
+    apt-get install -y nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* nodesource_setup.sh
+
+# ================================
+# 3단계: PyTorch 설치 (CUDA 12.6)
+# ================================
+RUN pip install --no-cache-dir \
+    torch==2.6.0 \
+    torchvision==0.21.0 \
+    torchaudio==2.6.0 \
+    --index-url https://download.pytorch.org/whl/cu126
+
+# ================================
+# 4단계: ComfyUI 설치
 # ================================
 WORKDIR /workspace
-RUN mkdir -p /workspace && chmod -R 777 /workspace && \
-    chown -R root:root /workspace && \
-    git clone https://github.com/A01demort/ComfyUI.git /workspace/ComfyUI
+RUN git clone https://github.com/A01demort/ComfyUI.git /workspace/ComfyUI
 
 WORKDIR /workspace/ComfyUI
 
-# ComfyUI 필수 의존성 설치 (PyTorch CUDA 12.1 호환 버전 먼저 설치 후 나머지)
-# [중요] ComfyUI requirements.txt에 버전 미지정 torch/torchaudio/torchvision/transformers가 있음
-# → 이미 설치된 호환 버전을 덮어쓰지 않도록 제외하고 설치
-RUN pip install --no-cache-dir torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121 && \
-    grep -v -E '^(torch|torchvision|torchaudio|transformers)([><=\s]|$)' requirements.txt | pip install --no-cache-dir -r /dev/stdin && \
-    pip install --no-cache-dir transformers==4.49.0
+# ComfyUI 의존성 설치
+# torch/torchvision/torchaudio/transformers 버전 보호를 위해 제외 후 설치
+RUN grep -v -E '^(torch|torchvision|torchaudio|transformers)([><=\s]|$)' requirements.txt \
+    | pip install --no-cache-dir -r /dev/stdin && \
+    pip install --no-cache-dir transformers==4.57.3
 
-# Node.js 18 설치 (기존 nodejs 제거 후)
-RUN apt-get remove -y nodejs npm && \
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    node -v && npm -v
+# JupyterLab 설치
+RUN pip install --no-cache-dir jupyterlab==4.3.5 jupyter-server==2.15.0
 
-# JupyterLab 안정 버전 설치
-RUN pip install --no-cache-dir jupyterlab==3.6.6 jupyter-server==1.23.6
-
-# Jupyter 설정파일 보완
+# Jupyter 설정
 RUN mkdir -p /root/.jupyter && \
-    echo "c.NotebookApp.allow_origin = '*'\n\
-c.NotebookApp.ip = '0.0.0.0'\n\
-c.NotebookApp.open_browser = False\n\
-c.NotebookApp.token = ''\n\
-c.NotebookApp.password = ''\n\
-c.NotebookApp.terminado_settings = {'shell_command': ['/bin/bash']}" \
-> /root/.jupyter/jupyter_notebook_config.py
+    printf "c.ServerApp.allow_origin = '*'\nc.ServerApp.ip = '0.0.0.0'\nc.ServerApp.open_browser = False\nc.ServerApp.token = ''\nc.ServerApp.password = ''\nc.ServerApp.root_dir = '/workspace'\n" \
+    > /root/.jupyter/jupyter_server_config.py
 
 # ================================
-# 2단계: Custom Nodes 설치 스크립트 복사
+# 5단계: 스크립트 복사 (A1 폴더)
 # ================================
-# A1 폴더 생성 후 자동 커스텀 노드 설치 스크립트 복사
 RUN mkdir -p /workspace/A1
 COPY comfy_ostris_combine/init_or_check_nodes.sh /workspace/A1/init_or_check_nodes.sh
-COPY comfy_ostris_combine/Startup+banner.sh /workspace/A1/Startup+banner.sh
-RUN chmod +x /workspace/A1/init_or_check_nodes.sh && \
-    chmod +x /workspace/A1/Startup+banner.sh
-
-# 진단 로그 스크립트 복사 (JupyterLab에서 바로 실행 가능)
-COPY Errrrrrrrrrrrrror_log.sh /workspace/Errrrrrrrrrrrrror_log.sh
-RUN chmod +x /workspace/Errrrrrrrrrrrrror_log.sh
-
-# Wan2.1_Vace_a1.sh 스크립트 복사 및 실행 권한 설정
-COPY comfy_ostris_combine/Wan2.1_Vace_a1.sh /workspace/A1/Wan2.1_Vace_a1.sh
-RUN chmod +x /workspace/A1/Wan2.1_Vace_a1.sh
-
-# SCAIL_down_a1.sh 스크립트 복사 및 실행 권한 설정
-COPY comfy_ostris_combine/SCAIL_down_a1.sh /workspace/A1/SCAIL_down_a1.sh
-RUN chmod +x /workspace/A1/SCAIL_down_a1.sh
-
-# 원래 되던 섹션 위에는 Startup_banner 추가한 부분 점검중
-# # A1 폴더 생성 후 자동 커스텀 노드 설치 스크립트 복사
-# RUN mkdir -p /workspace/A1
-# COPY init_or_check_nodes.sh /workspace/A1/init_or_check_nodes.sh
-# RUN chmod +x /workspace/A1/init_or_check_nodes.sh
-
-# # Wan2.1_Vace_a1.sh 스크립트 복사 및 실행 권한 설정
-# COPY Wan2.1_Vace_a1.sh /workspace/A1/Wan2.1_Vace_a1.sh
-# RUN chmod +x /workspace/A1/Wan2.1_Vace_a1.sh
+COPY comfy_ostris_combine/Startup+banner.sh      /workspace/A1/Startup+banner.sh
+COPY comfy_ostris_combine/Wan2.1_Vace_a1.sh      /workspace/A1/Wan2.1_Vace_a1.sh
+COPY comfy_ostris_combine/SCAIL_down_a1.sh       /workspace/A1/SCAIL_down_a1.sh
+RUN chmod +x \
+    /workspace/A1/init_or_check_nodes.sh \
+    /workspace/A1/Startup+banner.sh \
+    /workspace/A1/Wan2.1_Vace_a1.sh \
+    /workspace/A1/SCAIL_down_a1.sh
 
 # ================================
-# 3단계: OSTRIS (ai-toolkit) 설치
+# 6단계: OSTRIS (ai-toolkit) 설치
 # ================================
 COPY comfy_ostris_combine/ /workspace/ostris/
 RUN cd /workspace/ostris && \
     chmod +x docker/install.sh && \
     ./docker/install.sh
 
-# OSTRIS 시작 스크립트 복사
+# OSTRIS 시작 스크립트
 COPY comfy_ostris_combine/docker/start.sh /workspace/ostris/start.sh
 RUN chmod +x /workspace/ostris/start.sh
 
-# 볼륨 마운트
-VOLUME ["/workspace"]
+# ================================
+# 7단계: 최종 정리
+# ================================
+RUN rm -rf /root/.cache/pip /tmp/*
 
-# 포트 설정
+# 볼륨 / 포트 설정
+VOLUME ["/workspace"]
 EXPOSE 8188
 EXPOSE 8888
 EXPOSE 8675
@@ -118,11 +120,13 @@ CMD bash -c "\
 echo '🌀 A1(AI는 에이원) : https://www.youtube.com/@A01demort' && \
 /workspace/A1/init_or_check_nodes.sh && \
 echo '✅ 의존성 확인 완료 - 서비스 시작' && \
-(jupyter lab --ip=0.0.0.0 --port=8888 --allow-root \
---ServerApp.root_dir=/workspace \
---ServerApp.token='' --ServerApp.password='' & \
-python -u /workspace/ComfyUI/main.py --listen 0.0.0.0 --port=8188 \
---front-end-version Comfy-Org/ComfyUI_frontend@1.37.2 & \
-cd /workspace/ostris/ui && npm run start & \
-/workspace/A1/Startup+banner.sh & \
-wait)"
+( \
+  jupyter lab --ip=0.0.0.0 --port=8888 --allow-root \
+    --ServerApp.root_dir=/workspace \
+    --ServerApp.token='' --ServerApp.password='' & \
+  python -u /workspace/ComfyUI/main.py --listen 0.0.0.0 --port=8188 \
+    --front-end-version Comfy-Org/ComfyUI_frontend@1.37.2 & \
+  cd /workspace/ostris/ui && npm run start & \
+  /workspace/A1/Startup+banner.sh & \
+  wait \
+)"

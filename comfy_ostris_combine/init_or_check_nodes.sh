@@ -9,16 +9,16 @@ echo "🌀 RunPod 재시작 시 의존성 복구 시작"
 if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
     echo '📦 코어 파이썬 패키지 설치'
 
-    # Torch 2.4.1 + CUDA 12.1 고정 설치
+    # Torch 2.6.0 + CUDA 12.6 고정 설치
     pip uninstall -y torch torchvision torchaudio 2>/dev/null || true
-    pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121 || echo '⚠️ Torch 설치 실패'
+    pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu126 || echo '⚠️ Torch 설치 실패'
 
     # ComfyUI 필수 의존성 설치 (sqlalchemy, alembic 등)
     # torch/torchvision/torchaudio/transformers는 버전 충돌 방지를 위해 제외
     if [ -f /workspace/ComfyUI/requirements.txt ]; then
         grep -v -E '^(torch|torchvision|torchaudio|transformers)([><=[:space:]]|$)' /workspace/ComfyUI/requirements.txt \
             | pip install -r /dev/stdin || echo '⚠️ ComfyUI requirements 설치 실패'
-        pip install transformers==4.49.0 || echo '⚠️ transformers 설치 실패'
+        pip install transformers==4.57.3 || echo '⚠️ transformers 설치 실패'
     fi
 
     pip install torchsde av pydantic-settings || echo '⚠️ 초기 의존성 설치 실패'
