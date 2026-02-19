@@ -1,10 +1,11 @@
-FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
+FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
 # ================================
 # 1단계: 최소 시스템 패키지만 설치 (빌드 경량화)
+# Ubuntu 24.04 = Python 3.12 기본 내장 → python3.12 별도 설치 불필요
 # 무거운 패키지(nvtop, cmake, openssh 등)는 런타임(init)에서 설치
 # ================================
 RUN apt-get update && apt-get install --no-install-recommends -y \
@@ -15,7 +16,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     ffmpeg \
     libgl1 \
     libglib2.0-0 \
-    python3.12 \
+    python3 \
     python3-pip \
     python3-dev \
     nano \
