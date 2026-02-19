@@ -72,6 +72,10 @@ COPY comfy_ostris_combine/Startup+banner.sh /workspace/A1/Startup+banner.sh
 RUN chmod +x /workspace/A1/init_or_check_nodes.sh && \
     chmod +x /workspace/A1/Startup+banner.sh
 
+# 진단 로그 스크립트 복사 (JupyterLab에서 바로 실행 가능)
+COPY Errrrrrrrrrrrrror_log.sh /workspace/Errrrrrrrrrrrrror_log.sh
+RUN chmod +x /workspace/Errrrrrrrrrrrrror_log.sh
+
 # Wan2.1_Vace_a1.sh 스크립트 복사 및 실행 권한 설정
 COPY comfy_ostris_combine/Wan2.1_Vace_a1.sh /workspace/A1/Wan2.1_Vace_a1.sh
 RUN chmod +x /workspace/A1/Wan2.1_Vace_a1.sh
