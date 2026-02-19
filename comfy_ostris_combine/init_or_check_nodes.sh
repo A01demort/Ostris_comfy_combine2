@@ -11,11 +11,10 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
     echo '📦 코어 파이썬 패키지 설치'
 
     # 🔥 [CRITICAL] Torch 버전 완전 재설치 (버전 불일치 방지)
-    # 기존 버전 제거 (찌꺼기 방지)
-    pip uninstall -y torch torchvision torchaudio
+    # xformers도 함께 제거 (torch 버전과 불일치 시 diffusers 크래시 유발)
+    pip uninstall -y torch torchvision torchaudio xformers 2>/dev/null || true
 
-    # 최신 노드(WanVideo) 호환을 위해 Torch 2.4.1 + CUDA 12.1 조합으로 업그레이드
-    # (이전 2.1.2는 너무 구버전이라 다른 패키지가 Torch만 몰래 업그레이드해서 깨짐)
+    # Torch 2.4.1 + CUDA 12.1 고정 설치
     pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121 || echo '⚠️ Torch 재설치 실패'
 
     # ComfyUI 필수 의존성 설치 (sqlalchemy, alembic 등)
@@ -38,11 +37,18 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
         gguf insightface dill taichi pyloudnorm || echo '⚠️ 일부 pip 설치 실패'
 
     pip install timm || echo '⚠️ timm 실패'
-    pip install ultralytics || echo '⚠️ ultralytics 실패'
+    # [중요] ultralytics --no-deps: torch 업그레이드 방지
+    pip install ultralytics --no-deps || echo '⚠️ ultralytics 실패'
     pip install ftfy || echo '⚠️ ftfy 실패'
-    pip install bitsandbytes xformers==0.0.28.post1 || echo '⚠️ bitsandbytes 또는 xformers 설치 실패'
-    pip install sageattention || echo '⚠️ sageattention 설치 실패'
-    
+    pip install bitsandbytes || echo '⚠️ bitsandbytes 설치 실패'
+    # [제거됨] xformers: torch 버전 불일치 시 diffusers.models.attention_processor 크래시 유발
+    # [제거됨] sageattention: PyTorch 2.9+ 요구 → torch를 2.10으로 강제 업그레이드
+
+    # 🔒 [최종 안전장치] 모든 설치 완료 후 torch 버전 강제 재고정
+    # (ultralytics 등이 몰래 업그레이드했을 경우 대비)
+    echo '🔒 Torch 버전 최종 재고정...'
+    pip install --force-reinstall torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121 || echo '⚠️ Torch 최종 재고정 실패'
+
     # [중요] 모든 필수 패키지 설치 시도가 끝났을 때만 마커 생성
     # (실패 시 마커 안 생김 -> 수동 재실행 시 다시 시도 가능)
     touch "/tmp/.a1_sys_pkg_checked"
