@@ -43,8 +43,8 @@ def get_all_extensions() -> List[Extension]:
                 if isinstance(extensions, list):
                     # Iterate over the list and add the classes to the main list
                     all_extension_classes.extend(extensions)
-            except ImportError as e:
-                print(f"⚠️  Failed to import extension '{name}': {str(e)} (skipping)")
+            except Exception as e:
+                print(f"⚠️  Failed to import extension module '{name}': {str(e)} (skipping)")
 
     return all_extension_classes
 
@@ -53,5 +53,12 @@ def get_all_extensions_process_dict():
     all_extensions = get_all_extensions()
     process_dict = {}
     for extension in all_extensions:
-        process_dict[extension.uid] = extension.get_process()
+        try:
+            # get_process() triggers lazy import (e.g. controlnet_aux → mediapipe)
+            # wrap individually so one broken extension doesn't kill everything
+            proc = extension.get_process()
+            if proc is not None:
+                process_dict[extension.uid] = proc
+        except Exception as e:
+            print(f"⚠️  Failed to load process for extension '{extension.uid}': {str(e)} (skipping)")
     return process_dict

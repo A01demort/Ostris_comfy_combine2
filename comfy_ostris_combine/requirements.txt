@@ -26,7 +26,6 @@ open_clip_torch
 timm
 prodigyopt
 controlnet_aux==0.0.10
-mediapipe==0.9.3
 python-dotenv
 bitsandbytes
 hf_transfer

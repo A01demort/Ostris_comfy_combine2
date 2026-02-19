@@ -63,6 +63,59 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
     fi
 
     # ──────────────────────────────────────────
+    # STEP 2-b: controlnet_aux mediapipe 0.10.x 호환 패치
+    # mediapipe 0.9.x는 Python 3.12 미지원 → 0.10.x 사용
+    # controlnet_aux 0.0.10은 mp.solutions를 직접 참조하므로 패치 필요
+    # ──────────────────────────────────────────
+    echo "🔧 [STEP 2-b] controlnet_aux mediapipe 호환 패치 적용..."
+    python3 - << 'PYEOF'
+import os, sys
+
+# controlnet_aux mediapipe_face_common.py 위치 탐색
+search_dirs = []
+try:
+    import site
+    search_dirs = site.getsitepackages()
+except Exception:
+    pass
+search_dirs.append('/usr/local/lib/python3.12/dist-packages')
+search_dirs.append('/usr/lib/python3/dist-packages')
+
+patched = False
+for d in search_dirs:
+    fpath = os.path.join(d, 'controlnet_aux/mediapipe_face/mediapipe_face_common.py')
+    if os.path.exists(fpath):
+        with open(fpath, 'r') as f:
+            content = f.read()
+        if '# mediapipe-0.10x-compat-patch' in content:
+            print(f"✅ 이미 패치됨: {fpath}")
+            patched = True
+            break
+        # mediapipe 0.10.x에서 mp.solutions는 lazy load → force import로 활성화
+        compat_shim = (
+            '# mediapipe-0.10x-compat-patch\n'
+            'import mediapipe as _mp_compat\n'
+            'if not hasattr(_mp_compat, "solutions"):\n'
+            '    try:\n'
+            '        from mediapipe.python import solutions as _mp_sol\n'
+            '        _mp_compat.solutions = _mp_sol\n'
+            '    except Exception:\n'
+            '        pass\n'
+            'del _mp_compat\n'
+        )
+        new_content = compat_shim + content
+        with open(fpath, 'w') as f:
+            f.write(new_content)
+        print(f"✅ mediapipe 호환 패치 완료: {fpath}")
+        patched = True
+        break
+
+if not patched:
+    print("⚠️ controlnet_aux mediapipe_face_common.py 파일을 찾지 못했습니다 (무시)")
+PYEOF
+
+
+    # ──────────────────────────────────────────
     # STEP 3: OSTRIS UI 빌드
     # ──────────────────────────────────────────
     if [ -d /workspace/ostris/ui ]; then
