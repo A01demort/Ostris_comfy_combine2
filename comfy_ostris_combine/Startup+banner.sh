@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# ⏳ ComfyUI 실행 대기 (배너 타이밍 동기화)
-echo "⏳ ComfyUI 로딩 대기 중..."
-# 300초(5분) 타임아웃 방지 (무한대기 방지용 카운터는 생략, 단순 루프)
-while ! curl -s http://localhost:8188 >/dev/null; do
-  sleep 3
-done
-
 clear
 
 cat <<'EOF'
