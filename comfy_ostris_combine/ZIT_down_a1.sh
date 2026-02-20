@@ -41,20 +41,22 @@ fi
 
 # ====================================
 # 🔐 Hugging Face API 키 유효성 검사
+# whoami-v2 API: 유효 토큰만 200 반환
+# (공개 파일 URL은 토큰 없이도 200이라 의미 없음)
 # ====================================
-TEST_URL="https://huggingface.co/Comfy-Org/sigclip_vision_384/resolve/main/sigclip_vision_patch14_384.safetensors"
 echo "🔍 Hugging Face API 키 유효성 검사 중..."
 
-test_response=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $HUGGINGFACE_TOKEN" "$TEST_URL")
+test_response=$(curl -s -o /dev/null -w "%{http_code}" \
+    -H "Authorization: Bearer $HUGGINGFACE_TOKEN" \
+    "https://huggingface.co/api/whoami-v2")
 
-if [[ "$test_response" == "403" || "$test_response" == "401" ]]; then
-    echo -e "\n\033[0;31m🚫 오류: Hugging Face API 키가 유효하지 않습니다! (에러코드: $test_response)\033[0m"
-    echo "# 🚫 잘못된 Hugging Face API 키 검지됨 (에러 $test_response)" | tee -a "$RESULT_FILE"
-    echo "# 5초 대기 후, 인증 없이 받을 수 있는 파일들부터 다운로드를 시작합니다..." | tee -a "$RESULT_FILE"
-    sleep 5
-else
-    echo "✅ Hugging Face API 키 인증 성공 ($test_response)"
+if [[ "$test_response" != "200" ]]; then
+    echo -e "\n\033[0;31m🚫 오류: Hugging Face API 키가 유효하지 않습니다! (HTTP $test_response)\033[0m"
+    echo "🚫 다운로드를 중단합니다."
+    exit 1
 fi
+
+echo "✅ Hugging Face API 키 인증 성공 (HTTP $test_response)"
 
 # ====================================
 # 📌 다운로드 리스트 (6개 파일)

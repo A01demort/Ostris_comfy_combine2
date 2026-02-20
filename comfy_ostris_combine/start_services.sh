@@ -67,20 +67,31 @@ echo "✅ ComfyUI 응답 확인됨"
 bash /workspace/A1/ZIT_tools_ready_banner.sh
 
 # ====================================
-# 🔑 Hugging Face API 키 확인 및 모델 자동 다운로드
+# 🔑 Hugging Face API 키 실제 인증 확인
 # RunPod Environment Variables에서 Huggingface_API_key를 읽어옴
+# whoami-v2 API로 토큰 유효성 실제 검증
+# (공개 파일 URL은 토큰 없이도 200 → 속임수 방지)
 # ====================================
 HF_KEY="${Huggingface_API_key:-}"
 
 if [[ -z "$HF_KEY" || "$HF_KEY" == "Huggingface_Token_key" ]]; then
-    # ── 키 없음 → 바로 Startup 배너 ────────────────────────
+    # ── 키 자체가 없음 → 건너뜀 ────────────────────────────
     echo "⚠️  Huggingface_API_key 환경변수가 없습니다. 모델 다운로드를 건너뜁니다."
 
 else
-    # ── 키 있음 → ZIT 다운로드 완료까지 대기 후 Startup 배너
-    echo "✅ Huggingface_API_key 확인됨. Z-Image-Turbo 모델 다운로드를 시작합니다..."
-    bash /workspace/A1/ZIT_down_a1.sh
-    echo "✅ 모델 다운로드 완료"
+    # ── 키가 입력됐어도 실제로 HF 서버에서 유효한지 검증 ──────
+    echo "🔍 Hugging Face API 키 실제 인증 검사 중..."
+    HF_AUTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+        -H "Authorization: Bearer $HF_KEY" \
+        "https://huggingface.co/api/whoami-v2")
+
+    if [[ "$HF_AUTH_CODE" == "200" ]]; then
+        echo "✅ HF 토큰 인증 성공 (HTTP $HF_AUTH_CODE). Z-Image-Turbo 모델 다운로드를 시작합니다..."
+        bash /workspace/A1/ZIT_down_a1.sh
+        echo "✅ 모델 다운로드 완료"
+    else
+        echo "🚫 HF 토큰 인증 실패 (HTTP $HF_AUTH_CODE). 잘못된 키이므로 다운로드를 건너뜁니다."
+    fi
 fi
 
 # ── 최종 배너 출력 ───────────────────────────────────────────
