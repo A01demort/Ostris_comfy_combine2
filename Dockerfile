@@ -27,6 +27,33 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 RUN ln -sf /usr/bin/python3 /usr/bin/python
 
 # ================================
+# bash 프롬프트(PS1) 및 터미널 환경 설정
+# JupyterLab Terminal에서 경로가 제대로 표시되도록 .bashrc 구성
+# ================================
+RUN cat >> /root/.bashrc << 'BASHRC'
+
+# ── 터미널 환경 ──────────────────────────────────────────
+export TERM=xterm-256color
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+
+# ── PS1 프롬프트: root@hostname:/현재경로# 형태로 표시 ──
+export PS1='\[\e[01;32m\]\u@\h\[\e[00m\]:\[\e[01;34m\]\w\[\e[00m\]\$ '
+
+# ── 기본 시작 경로 ────────────────────────────────────────
+cd /workspace 2>/dev/null || true
+
+# ── 유용한 단축 명령어 ────────────────────────────────────
+alias ll='ls -alF --color=auto'
+alias ls='ls --color=auto'
+alias la='ls -A --color=auto'
+alias zit='bash /workspace/A1/ZIT_down_a1.sh'
+alias comfy='cd /workspace/ComfyUI'
+alias a1='cd /workspace/A1'
+
+BASHRC
+
+# ================================
 # 2단계: Node.js 23.x 설치 (OSTRIS UI 빌드에 필요)
 # ================================
 RUN curl -fsSL https://deb.nodesource.com/setup_23.x | bash - && \

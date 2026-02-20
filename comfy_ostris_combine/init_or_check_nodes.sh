@@ -144,6 +144,12 @@ c.ServerApp.open_browser = False
 c.ServerApp.token = ''
 c.ServerApp.password = ''
 c.ServerApp.root_dir = '/workspace'
+
+# ── 터미널 설정: bash -i 으로 실행하여 .bashrc 로드 (PS1 프롬프트 정상화) ──
+c.ServerApp.terminado_settings = {
+    'shell_command': ['/bin/bash', '--rcfile', '/root/.bashrc', '-i'],
+    'cwd': '/workspace'
+}
 EOF
 
     # ──────────────────────────────────────────
