@@ -1,9 +1,12 @@
 #!/bin/bash
 
 # ====================================
-# 🧳 Hugging Face API 키 (필요 입력)
+# 🧳 Hugging Face API 키 설정
 # ====================================
-HUGGINGFACE_TOKEN="Huggingface_Token_key"
+# ✅ RunPod 환경변수(Huggingface_API_key)에서 자동으로 읽어옵니다.
+# ❌ 환경변수가 없을 경우 아래 직접 입력란을 사용하세요:
+#    (JupyterLab에서 /workspace/A1/ZIT_down_a1.sh 열고 수정 후 실행)
+HUGGINGFACE_TOKEN="${Huggingface_API_key:-Huggingface_Token_key}"
 
 # ====================================
 # 🛠️ 사용자 설정값
