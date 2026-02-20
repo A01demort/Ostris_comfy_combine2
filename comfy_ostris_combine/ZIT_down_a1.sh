@@ -8,7 +8,7 @@ HUGGINGFACE_TOKEN="Huggingface_Token_key"
 # ====================================
 # 🛠️ 사용자 설정값
 # ====================================
-MAX_PARALLEL=5
+MAX_PARALLEL=8
 
 # ====================================
 # 📂 파일 설정
@@ -54,27 +54,27 @@ else
 fi
 
 # ====================================
-# 📌 다운로드 리스트 (4개 파일)
+# 📌 다운로드 리스트 (6개 파일)
 # ====================================
 downloads=(
 
-  # 1. UNet 모델 - Wan2.1_14B_VACE-Q5_K_M.gguf
-  "https://huggingface.co/QuantStack/Wan2.1_14B_VACE-GGUF/resolve/main/Wan2.1_14B_VACE-Q5_K_M.gguf|/workspace/ComfyUI/models/unet/Wan2.1_14B_VACE-Q5_K_M.gguf"
+  # 1. Z_image_turbo- 모델 (bf16)
+  "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/diffusion_models/z_image_turbo_bf16.safetensors|/workspace/ComfyUI/models/diffusion_models/z_image_turbo_bf16.safetensors"
 
-  # 2. LoRA 모델 - Wan2.1_CausVid_14B_lora_rank32_v2
-  "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan21_CausVid_14B_T2V_lora_rank32_v2.safetensors|/workspace/ComfyUI/models/loras/Wan21_CausVid_14B_T2V_lora_rank32_v2.safetensors"
+  # 2. Z_image_turbo- Distill (LORA)
+  "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/loras/z_image_turbo_distill_patch_lora_bf16.safetensors|/workspace/ComfyUI/models/loras/z_image_turbo_distill_patch_lora_bf16.safetensors"
 
-  # 3. VAE 모델 - Wan_2.1_vae
-  "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors|/workspace/ComfyUI/models/vae/wan_2.1_vae.safetensors"
+  # 3. VAE (FLUX버전과 같음)
+  "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors|/workspace/ComfyUI/models/vae/FLUX_VAE.safetensors"
 
-  # 4. 텍스트 인코더 - umt5_xxl_fp16
-  "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp16.safetensors|/workspace/ComfyUI/models/text_encoders/umt5_xxl_fp16.safetensors"
-  
-  # 5. 텍스트 인코더 - umt5_xxl_fp8_e4m3fn_scaled
-  "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors|/workspace/ComfyUI/models/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+  # 4. TEXT ENCODER모델 (Qwen3_4b)
+  "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors|/workspace/ComfyUI/models/text_encoders/qwen_3_4b.safetensors"
 
-  # 6. UNet 모델 - Wan2.1_14B_VACE-Q8_0.gguf
-  "https://huggingface.co/QuantStack/Wan2.1_14B_VACE-GGUF/resolve/main/Wan2.1_14B_VACE-Q8_0.gguf|/workspace/ComfyUI/models/unet/Wan2.1_14B_VACE-Q8_0.gguf"
+  # 5. Z-image-Union-Controlnet file- 업글버전 (2.1 Version)
+  "https://huggingface.co/alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1/resolve/main/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2601-8steps.safetensors|/workspace/ComfyUI/models/model_patches/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2601-8steps.safetensors"
+
+  # 6. Z-image-Union-Controlnet file- tile버전 (2.1 Version)
+  "https://huggingface.co/alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1/resolve/main/Z-Image-Turbo-Fun-Controlnet-Tile-2.1-2601-8steps.safetensors|/workspace/ComfyUI/models/model_patches/Z-Image-Turbo-Fun-Controlnet-Tile-2.1-2601-8steps.safetensors"
 
 )
 
