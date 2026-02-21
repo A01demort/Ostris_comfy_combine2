@@ -49,6 +49,7 @@ alias la='ls -A --color=auto'
 alias zit='bash /workspace/A1/ZIT_down_a1.sh'
 alias comfy='cd /workspace/ComfyUI'
 alias a1='cd /workspace/A1'
+alias move='bash /workspace/Move_LoRA_a1.sh'
 
 BASHRC
 
@@ -64,7 +65,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_23.x | bash - && \
 # 3단계: 스크립트 복사 (A1 폴더 & OSTRIS)
 # 실제 무거운 설치는 모두 런타임(init_or_check_nodes.sh)에서 처리
 # ================================
-RUN mkdir -p /workspace/A1 /workspace/ostris
+RUN mkdir -p /workspace/A1 /workspace/ostris /workspace/lora_training/output /workspace/lora_training/datasets
 
 COPY comfy_ostris_combine/init_or_check_nodes.sh    /workspace/A1/init_or_check_nodes.sh
 COPY comfy_ostris_combine/Startup+banner.sh         /workspace/A1/Startup+banner.sh
@@ -72,6 +73,7 @@ COPY comfy_ostris_combine/ZIT_down_a1.sh            /workspace/A1/ZIT_down_a1.sh
 COPY comfy_ostris_combine/ZIT_no_key_banner.sh      /workspace/A1/ZIT_no_key_banner.sh
 COPY comfy_ostris_combine/ZIT_tools_ready_banner.sh /workspace/A1/ZIT_tools_ready_banner.sh
 COPY comfy_ostris_combine/start_services.sh         /workspace/A1/start_services.sh
+COPY comfy_ostris_combine/Move_LoRA_a1.sh           /workspace/Move_LoRA_a1.sh
 
 COPY comfy_ostris_combine/ /workspace/ostris/
 COPY comfy_ostris_combine/docker/start.sh /workspace/ostris/start.sh
@@ -83,6 +85,7 @@ RUN chmod +x \
     /workspace/A1/ZIT_no_key_banner.sh \
     /workspace/A1/ZIT_tools_ready_banner.sh \
     /workspace/A1/start_services.sh \
+    /workspace/Move_LoRA_a1.sh \
     /workspace/ostris/docker/install.sh \
     /workspace/ostris/start.sh
 
