@@ -46,7 +46,7 @@ EOF
 echo ""
 echo "  ┌─────────────────────────────────────────────────────────────────┐"
 echo "  │                                                                 │"
-echo "  │  ✅  ALL GOOD — 모든 준비 완료!                                 │"
+echo "  │  ✅  준비완료                                                   │"
 echo "  │  🖥️  ComfyUI READY TO USE  /  ComfyUI 준비완료                 │"
 echo "  │                                                                 │"
 echo "  │  🎓  AI는 에이원   : https://www.youtube.com/@A01demort        │"

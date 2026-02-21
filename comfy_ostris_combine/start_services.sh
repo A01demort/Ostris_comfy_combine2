@@ -2,13 +2,20 @@
 # ============================================================
 # start_services.sh
 # init_or_check_nodes.sh 완료 후 실행됨
-# 실행 순서:
+#
+# ▶ 최초 실행 (Fresh Pod):
 #   1. 서비스들 백그라운드 시작 (JupyterLab / ComfyUI / OSTRIS)
 #   2. ComfyUI 완전히 뜰 때까지 대기
 #   3. ZIT_tools_ready_banner.sh (TOOLS READY!! 배너)
-#   4. HF API 키 확인
-#      - 키 있음 → ZIT_down_a1.sh 다운로드 완료 대기 → Startup+banner
-#      - 키 없음 → 바로 Startup+banner 출력
+#   4. HF API 키 확인 → 다운로드
+#   5. Startup+banner.sh (준비완료)
+#
+# ▶ Restart Pod:
+#   1. 서비스들 백그라운드 시작
+#   2. ComfyUI 완전히 뜰 때까지 대기
+#   3. (TOOLS READY 배너 스킵)
+#   4. (HF 다운로드 스킵)
+#   5. Startup+banner.sh (준비완료)
 # ============================================================
 
 # PATH 완전 갱신 (pip로 설치된 bin 경로 포함)
@@ -19,9 +26,41 @@ hash -r 2>/dev/null || true
 PYTHON_BIN=$(which python3 || echo "/usr/bin/python3")
 JUPYTER_BIN=$(which jupyter || echo "/usr/local/bin/jupyter")
 
+# ============================================================
+# 🔁 Restart 여부 판단
+#    마커 파일이 있으면 → Restart
+#    없으면           → 최초 실행 (Fresh)
+# ============================================================
+MARKER_FILE="/workspace/.pod_initialized"
+
+if [ -f "$MARKER_FILE" ]; then
+    IS_RESTART=true
+    echo "♻️  Restart Pod 감지됨 — 다운로드 및 TOOLS READY 배너를 건너뜁니다."
+else
+    IS_RESTART=false
+    echo "🆕 최초 실행(Fresh Pod) 감지됨."
+    # 마커 파일 생성 (다음 재시작 시 Restart로 인식)
+    touch "$MARKER_FILE"
+fi
+
+echo ""
 echo "🐍 Python: $PYTHON_BIN"
 echo "📓 Jupyter: $JUPYTER_BIN"
 echo "🚀 서비스 시작 중..."
+
+# ── JupyterLab 설정 파일 생성 ──────────────────────────────
+# Terminal이 파일 탐색기에서 현재 열려 있는 폴더 기준으로 시작되도록 설정
+# (설정 없으면 항상 root_dir=/workspace 로 고정됨)
+mkdir -p /root/.jupyter
+cat > /root/.jupyter/jupyter_server_config.py << 'JCONF'
+c.ServerApp.root_dir = '/workspace'
+c.ServerApp.preferred_dir = '/workspace'
+
+# Terminal이 파일 탐색기의 현재 디렉토리(cwd)에서 열리도록 설정
+# cwd='' 이면 JupyterLab이 각 터미널 요청 시 현재 탐색 경로를 자동으로 사용
+c.TerminalManager.cwd = ''
+JCONF
+echo "✅ JupyterLab 설정 완료 (터미널 경로 자동 추적)"
 
 # ── JupyterLab ──────────────────────────────────────────────
 "$JUPYTER_BIN" lab \
@@ -62,39 +101,41 @@ echo "✅ ComfyUI 응답 확인됨"
 
 # ====================================
 # 🎉 TOOLS READY 배너 출력
-# (ComfyUI + custom node 완전히 뜬 뒤 출력)
+# → Restart 시에는 완전히 스킵
 # ====================================
-bash /workspace/A1/ZIT_tools_ready_banner.sh
+if [ "$IS_RESTART" = false ]; then
+    bash /workspace/A1/ZIT_tools_ready_banner.sh
 
-# ====================================
-# 🔑 Hugging Face API 키 실제 인증 확인
-# RunPod Environment Variables에서 Huggingface_API_key를 읽어옴
-# whoami-v2 API로 토큰 유효성 실제 검증
-# (공개 파일 URL은 토큰 없이도 200 → 속임수 방지)
-# ====================================
-HF_KEY="${Huggingface_API_key:-}"
+    # ====================================
+    # 🔑 Hugging Face API 키 실제 인증 확인
+    # RunPod Environment Variables에서 Huggingface_API_key를 읽어옴
+    # whoami-v2 API로 토큰 유효성 실제 검증
+    # ====================================
+    HF_KEY="${Huggingface_API_key:-}"
 
-if [[ -z "$HF_KEY" || "$HF_KEY" == "Huggingface_Token_key" ]]; then
-    # ── 키 자체가 없음 → 건너뜀 ────────────────────────────
-    echo "⚠️  Huggingface_API_key 환경변수가 없습니다. 모델 다운로드를 건너뜁니다."
+    if [[ -z "$HF_KEY" || "$HF_KEY" == "Huggingface_Token_key" ]]; then
+        # ── 키 자체가 없음 → 건너뜀 ────────────────────────────
+        echo "⚠️  Huggingface_API_key 환경변수가 없습니다. 모델 다운로드를 건너뜁니다."
 
-else
-    # ── 키가 입력됐어도 실제로 HF 서버에서 유효한지 검증 ──────
-    echo "🔍 Hugging Face API 키 실제 인증 검사 중..."
-    HF_AUTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-        -H "Authorization: Bearer $HF_KEY" \
-        "https://huggingface.co/api/whoami-v2")
-
-    if [[ "$HF_AUTH_CODE" == "200" ]]; then
-        echo "✅ HF 토큰 인증 성공 (HTTP $HF_AUTH_CODE). Z-Image-Turbo 모델 다운로드를 시작합니다..."
-        bash /workspace/A1/ZIT_down_a1.sh
-        echo "✅ 모델 다운로드 완료"
     else
-        echo "🚫 HF 토큰 인증 실패 (HTTP $HF_AUTH_CODE). 잘못된 키이므로 다운로드를 건너뜁니다."
+        # ── 키가 입력됐어도 실제로 HF 서버에서 유효한지 검증 ──────
+        echo "🔍 Hugging Face API 키 실제 인증 검사 중..."
+        HF_AUTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $HF_KEY" \
+            "https://huggingface.co/api/whoami-v2")
+
+        if [[ "$HF_AUTH_CODE" == "200" ]]; then
+            echo "✅ HF 토큰 인증 성공 (HTTP $HF_AUTH_CODE). Z-Image-Turbo 모델 다운로드를 시작합니다..."
+            bash /workspace/A1/ZIT_down_a1.sh
+            echo "✅ 모델 다운로드 완료"
+        else
+            echo "🚫 HF 토큰 인증 실패 (HTTP $HF_AUTH_CODE). 잘못된 키이므로 다운로드를 건너뜁니다."
+        fi
     fi
 fi
 
 # ── 최종 배너 출력 ───────────────────────────────────────────
+# Restart / Fresh 모두 여기서 준비완료 출력
 bash /workspace/A1/Startup+banner.sh
 
 # 모든 백그라운드 프로세스 대기
