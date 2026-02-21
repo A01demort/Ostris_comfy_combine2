@@ -132,24 +132,21 @@ PYEOF
     # STEP 4: JupyterLab 설치 및 설정
     # ──────────────────────────────────────────
     echo "📦 [STEP 4] JupyterLab 설치"
-    pip install --no-cache-dir jupyterlab==4.3.5 jupyter-server==2.15.0 \
+    pip install --no-cache-dir \
+        jupyterlab==3.6.6 \
+        jupyter-server==1.23.6 \
         --break-system-packages \
         || echo '⚠️ JupyterLab 설치 실패'
 
     mkdir -p /root/.jupyter
-    cat > /root/.jupyter/jupyter_server_config.py << 'EOF'
-c.ServerApp.allow_origin = '*'
-c.ServerApp.ip = '0.0.0.0'
-c.ServerApp.open_browser = False
-c.ServerApp.token = ''
-c.ServerApp.password = ''
-c.ServerApp.root_dir = '/workspace'
-
-# ── 터미널 설정: bash -i 으로 실행하여 .bashrc 로드 (PS1 프롬프트 정상화) ──
-c.ServerApp.terminado_settings = {
-    'shell_command': ['/bin/bash', '--rcfile', '/root/.bashrc', '-i'],
-    'cwd': '/workspace'
-}
+    cat > /root/.jupyter/jupyter_notebook_config.py << 'EOF'
+c.NotebookApp.allow_origin = '*'
+c.NotebookApp.ip = '0.0.0.0'
+c.NotebookApp.open_browser = False
+c.NotebookApp.token = ''
+c.NotebookApp.password = ''
+# cwd 미지정 → JupyterLab 파일 탐색기 현재 폴더 기준으로 터미널 열림
+c.NotebookApp.terminado_settings = {'shell_command': ['/bin/bash']}
 EOF
 
     # ──────────────────────────────────────────

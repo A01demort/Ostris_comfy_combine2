@@ -48,8 +48,7 @@ echo "🐍 Python: $PYTHON_BIN"
 echo "📓 Jupyter: $JUPYTER_BIN"
 echo "🚀 서비스 시작 중..."
 
-# ── 이전에 생성된 broken jupyter config 삭제 ─────────────────
-# (과거 잘못된 config 파일이 남아있으면 터미널이 Not Found됨)
+# ── 이전에 생성된 broken config 삭제 ────────────────────────
 rm -f /root/.jupyter/jupyter_server_config.py
 
 # ── JupyterLab ──────────────────────────────────────────────
@@ -57,8 +56,7 @@ rm -f /root/.jupyter/jupyter_server_config.py
     --ip=0.0.0.0 \
     --port=8888 \
     --allow-root \
-    --ServerApp.root_dir=/workspace \
-    --TerminalManager.cwd='' \
+    --notebook-dir=/workspace \
     --IdentityProvider.token='' \
     --ServerApp.password='' \
     --no-browser &
