@@ -40,7 +40,9 @@ export LC_ALL=C.UTF-8
 # ── PS1 프롬프트: root@hostname:/현재경로# 형태로 표시 ──
 export PS1='\[\e[01;32m\]\u@\h\[\e[00m\]:\[\e[01;34m\]\w\[\e[00m\]\$ '
 
-# ── 기본 시작 경로: JupyterLab 파일탐색기 현재 폴더 기준으로 열리도록 cd 제거 ──
+# ── 기본 시작 경로: 시스템 루트(/)에서 열릴 때만 /workspace로 자동 이동 ──
+# (하위 폴더에서 'Open Terminal' 클릭 시 해당 경로를 유지하기 위함)
+if [ "$PWD" = "/" ]; then cd /workspace 2>/dev/null || true; fi
 
 # ── 유용한 단축 명령어 ────────────────────────────────────
 alias ll='ls -alF --color=auto'

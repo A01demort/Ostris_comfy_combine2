@@ -149,7 +149,7 @@ c.NotebookApp.open_browser = False
 c.NotebookApp.token = ''
 c.NotebookApp.password = ''
 # cwd 미지정 → JupyterLab 파일 탐색기 현재 폴더 기준으로 터미널 열림
-c.NotebookApp.terminado_settings = {'shell_command': ['/bin/bash']}
+c.NotebookApp.terminado_settings = {'shell_command': ['/bin/bash', '-i']}
 EOF
 
     # ──────────────────────────────────────────
