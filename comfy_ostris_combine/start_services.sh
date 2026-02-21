@@ -48,14 +48,9 @@ echo "🐍 Python: $PYTHON_BIN"
 echo "📓 Jupyter: $JUPYTER_BIN"
 echo "🚀 서비스 시작 중..."
 
-# ── JupyterLab Terminal 경로 설정 ───────────────────────────────
-# 파일 탐색기에서 현재 폴더 위치에서 터미널이 열리도록 설정
-# 이 설정만 단돈으로 넣음 (다른 설정 일체 없음)
-mkdir -p /root/.jupyter
-cat > /root/.jupyter/jupyter_server_config.py << 'JCONF'
-# 터미널 시작 경로를 클라이언트(파일 탐색기)가 요청한 경로로 유지
-c.TerminalManager.cwd = ''
-JCONF
+# ── 이전에 생성된 broken jupyter config 삭제 ─────────────────
+# (과거 잘못된 config 파일이 남아있으면 터미널이 Not Found됨)
+rm -f /root/.jupyter/jupyter_server_config.py
 
 # ── JupyterLab ──────────────────────────────────────────────
 "$JUPYTER_BIN" lab \
@@ -63,6 +58,7 @@ JCONF
     --port=8888 \
     --allow-root \
     --ServerApp.root_dir=/workspace \
+    --TerminalManager.cwd='' \
     --IdentityProvider.token='' \
     --ServerApp.password='' \
     --no-browser &
