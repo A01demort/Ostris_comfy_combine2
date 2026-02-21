@@ -64,8 +64,7 @@ rm -f /root/.jupyter/jupyter_server_config.py
 # ── ComfyUI ─────────────────────────────────────────────────
 "$PYTHON_BIN" -u /workspace/ComfyUI/main.py \
     --listen 0.0.0.0 \
-    --port=8188 \
-    --front-end-version Comfy-Org/ComfyUI_frontend@1.37.2 &
+    --port=8188 &
 
 # ── OSTRIS UI ────────────────────────────────────────────────
 (cd /workspace/ostris/ui && npm run start) &
