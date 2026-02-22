@@ -84,8 +84,8 @@ downloads=(
   # 7. SeedVR2 - EMA VAE (fp16)
   "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/ema_vae_fp16.safetensors|/workspace/ComfyUI/models/SEEDVR2/ema_vae_fp16.safetensors"
 
-  # 8. SeedVR2 - EMA 7B (fp8_e4m3fn)
-  "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/seedvr2_ema_7b_fp8_e4m3fn.safetensors|/workspace/ComfyUI/models/SEEDVR2/seedvr2_ema_7b_fp8_e4m3fn.safetensors"
+  # 8. SeedVR2 - EMA 7B (fp8_e4m3fn mixed block35 fp16)
+  "https://huggingface.co/AInVFX/SeedVR2_comfyUI/resolve/main/seedvr2_ema_7b_fp8_e4m3fn_mixed_block35_fp16.safetensors|/workspace/ComfyUI/models/SEEDVR2/seedvr2_ema_7b_fp8_e4m3fn_mixed_block35_fp16.safetensors"
 
 )
 
