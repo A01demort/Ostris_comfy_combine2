@@ -81,6 +81,12 @@ downloads=(
   # 6. Z-image-Union-Controlnet file- tile버전 (2.1 Version)
   "https://huggingface.co/alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1/resolve/main/Z-Image-Turbo-Fun-Controlnet-Tile-2.1-2601-8steps.safetensors|/workspace/ComfyUI/models/model_patches/Z-Image-Turbo-Fun-Controlnet-Tile-2.1-2601-8steps.safetensors"
 
+  # 7. SeedVR2 - EMA VAE (fp16)
+  "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/ema_vae_fp16.safetensors|/workspace/ComfyUI/models/SEEDVR2/ema_vae_fp16.safetensors"
+
+  # 8. SeedVR2 - EMA 7B (fp8_e4m3fn)
+  "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/seedvr2_ema_7b_fp8_e4m3fn.safetensors|/workspace/ComfyUI/models/SEEDVR2/seedvr2_ema_7b_fp8_e4m3fn.safetensors"
+
 )
 
 # ====================================

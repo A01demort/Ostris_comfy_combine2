@@ -187,6 +187,7 @@ EOF
 
     pip install ultralytics --no-deps --break-system-packages || echo '⚠️ ultralytics 실패'
     pip install ftfy --break-system-packages                  || echo '⚠️ ftfy 실패'
+    pip install rotary-embedding-torch --break-system-packages || echo '⚠️ rotary-embedding-torch 실패'
 
     rm -rf /root/.cache/pip
     touch "/tmp/.a1_sys_pkg_checked"
@@ -218,6 +219,7 @@ cd /workspace/ComfyUI/custom_nodes || exit 0
 [ ! -d "ComfyUI_LayerStyle" ]           && git clone https://github.com/A01demort/ComfyUI_LayerStyle.git            || echo '⏩ LayerStyle 이미 존재'
 [ ! -d "ComfyUI-Frame-Interpolation" ]  && git clone https://github.com/A01demort/ComfyUI-Frame-Interpolation.git   || echo '⏩ Frame-Interpolation 이미 존재'
 [ ! -d "ComfyUI-Impact-Pack" ]          && git clone https://github.com/A01demort/ComfyUI-Impact-Pack.git           || echo '⏩ Impact-Pack 이미 존재'
+[ ! -d "ComfyUI-SeedVR2_VideoUpscaler" ] && git clone https://github.com/A01demort/ComfyUI-SeedVR2_VideoUpscaler.git  || echo '⏩ SeedVR2_VideoUpscaler 이미 존재'
 )
 
 ############################################
