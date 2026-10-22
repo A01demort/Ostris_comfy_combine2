@@ -40,6 +40,7 @@ copy_missing(seed / 'docker/start.sh', workspace / 'ostris/start.sh')
 replacements = json.loads('[["jupyter-server==1.23.6", "jupyter-server==2.21.1"], ["if [ -f \\"$marker_file\\" ]; then", "if [ -f \\"$marker_file\\" ] && [ \\"$(cat \\"$marker_file\\")\\" = \\"$A1_NODE_ENV_ID\\" ]; then"], ["touch \\"$marker_file\\"", "printf \'%s\\\\n\' \\"$A1_NODE_ENV_ID\\" > \\"$marker_file\\""]]')
 prelude = 'export PIP_CONSTRAINT=/workspace/A1/runtime-constraints-v1.0.31.txt\nif [ -f /tmp/.a1_sys_pkg_checked ] && ! python3 -c \'from importlib.metadata import version; assert version("jupyter-server") == "2.21.1"\' >/dev/null 2>&1; then\n    rm -f /tmp/.a1_sys_pkg_checked\nfi\n\n'
 node_env = "if [ ! -f /tmp/.a1_node_env_id ]; then\n    python3 -c 'import uuid; print(uuid.uuid4())' > /tmp/.a1_node_env_id || exit 1\nfi\nA1_NODE_ENV_ID=$(cat /tmp/.a1_node_env_id)\n\n"
+impact_build = '        A1_NODE_BUILD_ARGS=()\n        if [ "$d" = "ComfyUI-Impact-Pack/" ]; then\n            A1_NODE_BUILD_ARGS=(--no-build-isolation)\n        fi\n\n'
 for relative in ('A1/init_or_check_nodes.sh', 'ostris/init_or_check_nodes.sh'):
     path = workspace / relative
     original = path.read_bytes()
@@ -52,6 +53,9 @@ for relative in ('A1/init_or_check_nodes.sh', 'ostris/init_or_check_nodes.sh'):
         text = text.replace('#!/bin/bash\n', '#!/bin/bash\n' + prelude, 1)
     if 'A1_NODE_ENV_ID=' not in text:
         text = text.replace('for d in */; do\n', node_env + 'for d in */; do\n', 1)
+    if 'A1_NODE_BUILD_ARGS=()' not in text:
+        text = text.replace('        echo "📦 $d 의존성 설치 중..."\n', impact_build + '        echo "📦 $d 의존성 설치 중..."\n', 1)
+    text = text.replace('| pip install -r /dev/stdin --break-system-packages; then', '| pip install "${A1_NODE_BUILD_ARGS[@]}" -r /dev/stdin --break-system-packages; then', 1)
     updated = text.replace('\n', newline).encode('utf-8')
     if updated != original:
         backup = workspace / 'A1' / '.compat-backup-v1.0.31' / relative

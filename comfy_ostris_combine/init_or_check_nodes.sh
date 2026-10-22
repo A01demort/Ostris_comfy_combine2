@@ -250,10 +250,15 @@ for d in */; do
             continue
         fi
 
+        A1_NODE_BUILD_ARGS=()
+        if [ "$d" = "ComfyUI-Impact-Pack/" ]; then
+            A1_NODE_BUILD_ARGS=(--no-build-isolation)
+        fi
+
         echo "📦 $d 의존성 설치 중..."
         # torch/torchvision/torchaudio 버전 보호 (OSTRIS 2.9.1 유지)
         if grep -v -E '^(torch|torchvision|torchaudio)([><=[:space:]]|$)' "$req_file" \
-            | pip install -r /dev/stdin --break-system-packages; then
+            | pip install "${A1_NODE_BUILD_ARGS[@]}" -r /dev/stdin --break-system-packages; then
             printf '%s\n' "$A1_NODE_ENV_ID" > "$marker_file"
         else
             echo "⚠️ $d 의존성 설치 실패 (무시하고 진행)"
