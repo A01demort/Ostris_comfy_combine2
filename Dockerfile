@@ -80,6 +80,9 @@ COPY comfy_ostris_combine/Move_LoRA_a1.sh           /workspace/Move_LoRA_a1.sh
 COPY comfy_ostris_combine/ /workspace/ostris/
 COPY comfy_ostris_combine/docker/start.sh /workspace/ostris/start.sh
 
+COPY comfy_ostris_combine/ /opt/a1-template/
+COPY comfy_ostris_combine/docker/workspace_init.sh /usr/local/bin/a1-workspace-init.sh
+
 RUN chmod +x \
     /workspace/A1/init_or_check_nodes.sh \
     /workspace/A1/Startup+banner.sh \
@@ -103,6 +106,7 @@ EXPOSE 8675
 # ================================
 CMD ["/bin/bash", "-c", "\
 echo '🌀 A1(AI는 에이원) : https://www.youtube.com/@A01demort' && \
+/bin/bash /usr/local/bin/a1-workspace-init.sh && \
 /workspace/A1/init_or_check_nodes.sh && \
 echo '✅ 의존성 확인 완료 - 새 환경으로 서비스 시작' && \
 exec /bin/bash /workspace/A1/start_services.sh"]

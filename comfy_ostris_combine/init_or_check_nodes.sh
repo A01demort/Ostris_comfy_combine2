@@ -1,4 +1,9 @@
 #!/bin/bash
+export PIP_CONSTRAINT=/workspace/A1/runtime-constraints-v1.0.31.txt
+if [ -f /tmp/.a1_sys_pkg_checked ] && ! python3 -c 'from importlib.metadata import version; assert version("jupyter-server") == "2.21.1"' >/dev/null 2>&1; then
+    rm -f /tmp/.a1_sys_pkg_checked
+fi
+
 # set -e 제거 (중간 실패로 전체 중단 방지)
 
 echo "🌀 RunPod 재시작 시 의존성 복구 시작"
@@ -137,7 +142,7 @@ PYEOF
     echo "📦 [STEP 4] JupyterLab 설치"
     pip install --no-cache-dir \
         jupyterlab==3.6.6 \
-        jupyter-server==1.23.6 \
+        jupyter-server==2.21.1 \
         --break-system-packages \
         || echo '⚠️ JupyterLab 설치 실패'
 
@@ -230,12 +235,17 @@ cd /workspace/ComfyUI/custom_nodes || {
     exit 0
 }
 
+if [ ! -f /tmp/.a1_node_env_id ]; then
+    python3 -c 'import uuid; print(uuid.uuid4())' > /tmp/.a1_node_env_id || exit 1
+fi
+A1_NODE_ENV_ID=$(cat /tmp/.a1_node_env_id)
+
 for d in */; do
     req_file="${d}requirements.txt"
     marker_file="${d}.installed"
 
     if [ -f "$req_file" ]; then
-        if [ -f "$marker_file" ]; then
+        if [ -f "$marker_file" ] && [ "$(cat "$marker_file")" = "$A1_NODE_ENV_ID" ]; then
             echo "⏩ $d 이미 설치됨, 건너뜀"
             continue
         fi
@@ -244,7 +254,7 @@ for d in */; do
         # torch/torchvision/torchaudio 버전 보호 (OSTRIS 2.9.1 유지)
         if grep -v -E '^(torch|torchvision|torchaudio)([><=[:space:]]|$)' "$req_file" \
             | pip install -r /dev/stdin --break-system-packages; then
-            touch "$marker_file"
+            printf '%s\n' "$A1_NODE_ENV_ID" > "$marker_file"
         else
             echo "⚠️ $d 의존성 설치 실패 (무시하고 진행)"
         fi
