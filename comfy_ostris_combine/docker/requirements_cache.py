@@ -25,7 +25,7 @@ def environment_key():
                                                       'LDFLAGS', 'CUDA_HOME', 'SAM2_BUILD_CUDA', 'SAM2_BUILD_ALLOW_ERRORS')}]
     for command in (['nvcc', '--version'], ['c++', '--version']):
         try:
-            data.append(subprocess.check_output(command, timeout=15).decode())
+            data.append(subprocess.check_output(command, timeout=60).decode())
         except (OSError, subprocess.SubprocessError):
             data.append(None)
     return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()[:24]
@@ -39,7 +39,7 @@ def prepare(source, target, exclude):
             continue
         if line.strip() == 'git+https://github.com/facebookresearch/sam2':
             output = subprocess.check_output(
-                ['git', 'ls-remote', 'https://github.com/facebookresearch/sam2', 'HEAD'], timeout=30)
+                ['git', 'ls-remote', 'https://github.com/facebookresearch/sam2', 'HEAD'], timeout=int(os.environ.get('A1_GIT_REF_TIMEOUT', '120')))
             commit = output.decode().split()[0]
             if not re.fullmatch(r'[0-9a-f]{40,64}', commit):
                 raise ValueError('SAM2 commit unavailable')

@@ -35,7 +35,7 @@ start_time=$(date +%s)
 # ====================================
 if ! command -v aria2c &> /dev/null; then
     echo "📦 aria2c가 설치되지 않았습니다. 설치를 시작합니다..."
-    timeout --signal=TERM --kill-after=30s 600s sudo bash -c 'apt update && apt install -y aria2'
+    timeout --signal=TERM --kill-after=30s "${A1_APT_TIMEOUT:-1800}s" sudo bash -c 'apt update && apt install -y aria2'
     if [ $? -ne 0 ]; then
         echo "❌ aria2 설치 실패. 수동 설치 필요."
         exit 1
@@ -51,7 +51,7 @@ fi
 # ====================================
 echo "🔍 Hugging Face API 키 유효성 검사 중..."
 
-test_response=$(curl --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 5 --retry-max-time 100 -s -o /dev/null -w "%{http_code}" \
+test_response=$(curl --connect-timeout 30 --max-time 120 --retry 2 --retry-delay 5 --retry-max-time 400 -s -o /dev/null -w "%{http_code}" \
     -H "Authorization: Bearer $HUGGINGFACE_TOKEN" \
     "https://huggingface.co/api/whoami-v2")
 
@@ -120,7 +120,7 @@ done
 A1_DOWNLOAD_RC=0
 if [ -s "$INPUT_FILE" ]; then
   echo -e "\n🚀 다운로드 시작...\n"
-  timeout --signal=TERM --kill-after=30s 1800s aria2c --max-tries=3 --retry-wait=5 --connect-timeout=10 --timeout=60 -x 8 -j "$MAX_PARALLEL" -i "$INPUT_FILE" \
+  timeout --signal=TERM --kill-after=30s "${A1_DOWNLOAD_TIMEOUT:-10800}s" aria2c --max-tries=3 --retry-wait=5 --connect-timeout=30 --timeout=180 -x 8 -j "$MAX_PARALLEL" -i "$INPUT_FILE" \
          --console-log-level=notice --summary-interval=1 \
          --header="Authorization: Bearer $HUGGINGFACE_TOKEN" \
          | tee -a "$LOG_FILE"

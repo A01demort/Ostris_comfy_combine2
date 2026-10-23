@@ -65,6 +65,7 @@ for relative in ('A1/init_or_check_nodes.sh', 'ostris/init_or_check_nodes.sh'):
             shutil.copy2(path, backup)
         path.write_bytes(updated)
 runpy.run_path(str(seed / 'docker/startup_upgrade.py'))['migrate'](workspace)
+runpy.run_path(str(seed / 'docker/timeout_upgrade.py'))['migrate'](workspace)
 PY
 
 chmod +x "$WORKSPACE"/A1/*.sh "$WORKSPACE/Move_LoRA_a1.sh" \

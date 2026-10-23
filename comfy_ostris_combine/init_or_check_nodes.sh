@@ -1,7 +1,7 @@
 #!/bin/bash
 source "${A1_HELPER_DIR:-/opt/a1-template/docker}/deploy_helpers.sh" || exit 1
 if [ "${A1_INIT_GUARD:-}" != 1 ]; then
-    timeout --signal=TERM --kill-after=30s "${A1_INIT_TIMEOUT:-5400}s" env A1_INIT_GUARD=1 /bin/bash "$0" "$@"
+    timeout --signal=TERM --kill-after=30s "${A1_INIT_TIMEOUT:-21600}s" env A1_INIT_GUARD=1 /bin/bash "$0" "$@"
     A1_INIT_RC=$?
     if [ "$A1_INIT_RC" -ne 0 ]; then
         printf '❌ 초기 설치 중단 (종료 코드 %s). /workspace/A1/logs를 확인하세요.\n' "$A1_INIT_RC" >&2
@@ -26,7 +26,7 @@ mkdir -p /workspace/lora_training/output /workspace/lora_training/datasets
 ############################################
 if [ ! -f "/tmp/.a1_apt_checked" ]; then
     echo "🛠️ 추가 시스템 패키지 설치 중..."
-    a1_run "시스템 패키지 설치" 600 3 bash -c 'apt-get update && apt-get install --no-install-recommends -y \
+    a1_run "시스템 패키지 설치" "${A1_APT_TIMEOUT:-1800}" 3 bash -c 'apt-get update && apt-get install --no-install-recommends -y \
         cmake \
         tmux \
         htop \
@@ -62,8 +62,8 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
     # ──────────────────────────────────────────
     echo "🔥 [STEP 1] PyTorch 2.9.1 + CUDA 12.8 설치 (OSTRIS 공식 Dockerfile 기준)"
     if ! a1_torch_ready; then
-        a1_run "PyTorch 정리" 120 1 pip uninstall -y torch torchvision torchaudio 2>/dev/null || true
-        a1_run "PyTorch 설치" 1200 3 pip install \
+        a1_run "PyTorch 정리" "${A1_CHECK_TIMEOUT:-300}" 1 pip uninstall -y torch torchvision torchaudio 2>/dev/null || true
+        a1_run "PyTorch 설치" "${A1_TORCH_TIMEOUT:-5400}" 3 pip install \
             torch==2.9.1 \
             torchvision==0.24.1 \
             torchaudio==2.9.1 \
@@ -78,7 +78,7 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
     # ──────────────────────────────────────────
     echo "🔥 [STEP 2] OSTRIS requirements.txt 설치"
     if [ -f /workspace/ostris/requirements.txt ]; then
-        a1_run "OSTRIS Python 설치" 1200 3 pip install -r /workspace/ostris/requirements.txt \
+        a1_run "OSTRIS Python 설치" "${A1_PIP_TIMEOUT:-3600}" 3 pip install -r /workspace/ostris/requirements.txt \
             --break-system-packages \
             || { echo '⚠️ OSTRIS requirements 설치 실패'; exit 1; }
     fi
@@ -150,7 +150,7 @@ PYEOF
     # STEP 4: JupyterLab 설치 및 설정
     # ──────────────────────────────────────────
     echo "📦 [STEP 4] JupyterLab 설치"
-    a1_run "JupyterLab 설치" 1200 3 pip install \
+    a1_run "JupyterLab 설치" "${A1_PIP_TIMEOUT:-3600}" 3 pip install \
         jupyterlab==3.6.6 \
         jupyter-server==2.21.1 \
         --break-system-packages \
@@ -181,26 +181,26 @@ EOF
     # ComfyUI 의존성: torch/torchvision/torchaudio/transformers 제외 (OSTRIS 버전 보호)
     if [ -f /workspace/ComfyUI/requirements.txt ]; then
         echo "📦 ComfyUI 의존성 설치 (torch·transformers 제외하여 OSTRIS 버전 보호)"
-        a1_pip_requirements "ComfyUI Python 설치" 1200 3 '^(torch|torchvision|torchaudio|transformers)([><=\s]|$)' /workspace/ComfyUI/requirements.txt \
+        a1_pip_requirements "ComfyUI Python 설치" "${A1_PIP_TIMEOUT:-3600}" 3 '^(torch|torchvision|torchaudio|transformers)([><=\s]|$)' /workspace/ComfyUI/requirements.txt \
             || { echo '⚠️ ComfyUI requirements 설치 실패'; exit 1; }
     fi
 
-    a1_run "초기 의존성 설치" 1200 3 pip install torchsde av pydantic-settings --break-system-packages \
+    a1_run "초기 의존성 설치" "${A1_PIP_TIMEOUT:-3600}" 3 pip install torchsde av pydantic-settings --break-system-packages \
         || { echo '⚠️ 초기 의존성 설치 실패'; exit 1; }
 
     # ──────────────────────────────────────────
     # STEP 6: ComfyUI 커스텀 노드용 추가 패키지
     # ──────────────────────────────────────────
     echo "📦 [STEP 6] 추가 파이썬 패키지 설치"
-    a1_run "추가 Python 설치" 1200 3 pip install --break-system-packages \
+    a1_run "추가 Python 설치" "${A1_PIP_TIMEOUT:-3600}" 3 pip install --break-system-packages \
         GitPython onnx onnxruntime opencv-python tqdm requests \
         scikit-image piexif packaging \
         protobuf pandas imageio[ffmpeg] pyzbar pillow numba \
         gguf insightface dill taichi pyloudnorm || { echo '⚠️ 일부 pip 설치 실패'; exit 1; }
 
-    a1_run "ultralytics 설치" 600 3 pip install ultralytics --no-deps --break-system-packages || { echo '⚠️ ultralytics 실패'; exit 1; }
-    a1_run "ftfy 설치" 600 3 pip install ftfy --break-system-packages                  || { echo '⚠️ ftfy 실패'; exit 1; }
-    a1_run "rotary-embedding-torch 설치" 600 3 pip install rotary-embedding-torch --break-system-packages || { echo '⚠️ rotary-embedding-torch 실패'; exit 1; }
+    a1_run "ultralytics 설치" "${A1_PIP_TIMEOUT:-3600}" 3 pip install ultralytics --no-deps --break-system-packages || { echo '⚠️ ultralytics 실패'; exit 1; }
+    a1_run "ftfy 설치" "${A1_PIP_TIMEOUT:-3600}" 3 pip install ftfy --break-system-packages                  || { echo '⚠️ ftfy 실패'; exit 1; }
+    a1_run "rotary-embedding-torch 설치" "${A1_PIP_TIMEOUT:-3600}" 3 pip install rotary-embedding-torch --break-system-packages || { echo '⚠️ rotary-embedding-torch 실패'; exit 1; }
 
     a1_core_ready || { printf '❌ 핵심 패키지 검증 실패\n' >&2; exit 1; }
     touch "/tmp/.a1_sys_pkg_checked"
@@ -287,7 +287,7 @@ for d in */; do
 
         echo "📦 $d 의존성 설치 중..."
         # torch/torchvision/torchaudio 버전 보호 (OSTRIS 2.9.1 유지)
-        if a1_pip_requirements "$d 의존성 설치" 1800 2 '^(torch|torchvision|torchaudio)([><=\s]|$)' "$req_file" "${A1_NODE_BUILD_ARGS[@]}"; then
+        if a1_pip_requirements "$d 의존성 설치" "${A1_NODE_TIMEOUT:-5400}" 2 '^(torch|torchvision|torchaudio)([><=\s]|$)' "$req_file" "${A1_NODE_BUILD_ARGS[@]}"; then
             printf '%s\n' "$A1_NODE_MARKER" > "$marker_file"
         else
             echo "⚠️ $d 의존성 설치 실패 (무시하고 진행)"
