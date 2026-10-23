@@ -120,7 +120,7 @@ done
 A1_DOWNLOAD_RC=0
 if [ -s "$INPUT_FILE" ]; then
   echo -e "\n🚀 다운로드 시작...\n"
-  timeout --signal=TERM --kill-after=30s "${A1_DOWNLOAD_TIMEOUT:-10800}s" aria2c --max-tries=3 --retry-wait=5 --connect-timeout=30 --timeout=180 -x 8 -j "$MAX_PARALLEL" -i "$INPUT_FILE" \
+  timeout --signal=TERM --kill-after=30s "${A1_DOWNLOAD_TIMEOUT:-3600}s" aria2c --max-tries=3 --retry-wait=5 --connect-timeout=30 --timeout=180 -x 8 -j "$MAX_PARALLEL" -i "$INPUT_FILE" \
          --console-log-level=notice --summary-interval=1 \
          --header="Authorization: Bearer $HUGGINGFACE_TOKEN" \
          | tee -a "$LOG_FILE"

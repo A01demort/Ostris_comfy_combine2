@@ -75,7 +75,7 @@ rm -f /root/.jupyter/jupyter_server_config.py
 # ====================================
 echo ""
 echo "⏳ ComfyUI 로딩 대기 중 (custom node 포함, 최대 10분)..."
-TIMEOUT="${A1_SERVICES_TIMEOUT:-1800}"
+TIMEOUT=$(a1_limit_seconds "${A1_SERVICES_TIMEOUT:-1800}") || exit 1
 printf '📋 실제 서비스 대기 상한: %s초 (Pod 설정값)\n' "$TIMEOUT"
 if ! a1_wait_services "$TIMEOUT"; then
     echo "⚠️ ComfyUI 기동 타임아웃 (계속 진행)"
@@ -121,8 +121,11 @@ fi
 
 # ── 최종 배너 출력 ───────────────────────────────────────────
 # Restart / Fresh 모두 여기서 준비완료 출력
+bash /workspace/A1/Startup+banner.sh || exit 1
 touch "$MARKER_FILE"
-bash /workspace/A1/Startup+banner.sh
+if [ -n "${A1_STARTUP_READY_FILE:-}" ]; then
+    printf 'ready\n' > "$A1_STARTUP_READY_FILE" || exit 1
+fi
 
 # 모든 백그라운드 프로세스 대기
 wait

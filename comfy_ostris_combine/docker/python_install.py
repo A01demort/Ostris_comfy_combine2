@@ -109,6 +109,10 @@ def fallback_state(arguments, environment):
 def install(seconds, arguments, environment=None):
     environment = dict(os.environ if environment is None else environment)
     deadline = time.monotonic() + seconds - min(5, seconds / 10)
+    startup = environment.get('A1_STARTUP_DEADLINE')
+    ready = environment.get('A1_STARTUP_READY_FILE')
+    if startup and not (ready and Path(ready).is_file()):
+        deadline = min(deadline, float(startup))
     pip_command = [sys.executable, '-m', 'pip', 'install', *arguments]
     uv = shutil.which('uv', path=environment.get('PATH'))
     state = fallback_state(arguments, environment)
