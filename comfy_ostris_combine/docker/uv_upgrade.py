@@ -15,7 +15,8 @@ def upgrade(text):
         source = 'source "${A1_HELPER_DIR:-/opt/a1-template/docker}/deploy_helpers.sh" || exit 1\n'
         text = text.replace(source, source + FALLBACK, 1)
     for label in ('OSTRIS Python 설치', 'JupyterLab 설치', '초기 의존성 설치', '추가 Python 설치'):
-        text = text.replace(f'a1_run "{label}" 1200 3 pip install', f'a1_python_install "{label}" 1200 3')
+        for seconds in ('1200', '"${A1_PIP_TIMEOUT:-3600}"'):
+            text = text.replace(f'a1_run "{label}" {seconds} 3 pip install', f'a1_python_install "{label}" {seconds} 3')
     return text
 
 

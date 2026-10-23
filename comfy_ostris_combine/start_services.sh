@@ -75,7 +75,8 @@ rm -f /root/.jupyter/jupyter_server_config.py
 # ====================================
 echo ""
 echo "⏳ ComfyUI 로딩 대기 중 (custom node 포함, 최대 10분)..."
-TIMEOUT=600
+TIMEOUT="${A1_SERVICES_TIMEOUT:-1800}"
+printf '📋 실제 서비스 대기 상한: %s초 (Pod 설정값)\n' "$TIMEOUT"
 if ! a1_wait_services "$TIMEOUT"; then
     echo "⚠️ ComfyUI 기동 타임아웃 (계속 진행)"
     printf '❌ 서비스 준비 실패. 준비완료 배너를 중단합니다.\n' >&2
@@ -104,7 +105,7 @@ if [ "$IS_RESTART" = false ]; then
     else
         # ── 키가 입력됐어도 실제로 HF 서버에서 유효한지 검증 ──────
         echo "🔍 Hugging Face API 키 실제 인증 검사 중..."
-        HF_AUTH_CODE=$(curl --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 5 --retry-max-time 100 -s -o /dev/null -w "%{http_code}" \
+        HF_AUTH_CODE=$(curl --connect-timeout 30 --max-time 120 --retry 2 --retry-delay 5 --retry-max-time 400 -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer $HF_KEY" \
             "https://huggingface.co/api/whoami-v2")
 

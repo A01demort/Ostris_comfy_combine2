@@ -30,7 +30,7 @@ def ui_fingerprint(root, source=None):
     source = Path(source or root)
     runtime = subprocess.check_output(
         ['node', '-p', 'JSON.stringify({versions:process.versions,arch:process.arch,platform:process.platform})'],
-        cwd=root, timeout=30)
+        cwd=root, timeout=120)
     digest = hashlib.sha256(b'a1-ui-cache-2\0' + runtime)
     digest.update(repr(platform.libc_ver()).encode())
     digest.update(str(root.resolve()).encode())
@@ -62,7 +62,7 @@ def ui_artifacts(root):
 def ui_modules_ready(root):
     return subprocess.run(
         ['node', '-e', "require('next/package.json'); const {PrismaClient}=require('@prisma/client'); new PrismaClient(); require('sqlite3')"],
-        cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30).returncode == 0
+        cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120).returncode == 0
 
 
 def ui_cache(mode, root, source=None):
@@ -84,7 +84,7 @@ def ui_cache(mode, root, source=None):
 def db_ready(root):
     database = root.parent / 'aitk_db.db'
     try:
-        connection = sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True, timeout=3)
+        connection = sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True, timeout=30)
         try:
             tables = {row[0] for row in connection.execute('SELECT name FROM sqlite_master WHERE type="table"')}
             return {'Settings', 'Queue', 'Job'}.issubset(tables)
@@ -159,7 +159,7 @@ def wait_services(seconds, ports=(8188, 8675, 8888)):
             if remaining <= 0:
                 break
             try:
-                with opener.open(f'http://127.0.0.1:{port}/', timeout=min(5, remaining)) as response:
+                with opener.open(f'http://127.0.0.1:{port}/', timeout=min(30, remaining)) as response:
                     if response.status != 200:
                         pending.append(port)
             except Exception:

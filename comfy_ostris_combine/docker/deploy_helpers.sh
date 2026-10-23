@@ -7,10 +7,10 @@ A1_STATE_DIR="${A1_STATE_DIR:-$A1_WORKSPACE/A1/.startup-state}"
 export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$A1_WORKSPACE/.cache/a1/pip}"
 export UV_CACHE_DIR="${UV_CACHE_DIR:-$A1_WORKSPACE/.cache/a1/uv}"
 export npm_config_cache="${npm_config_cache:-$A1_WORKSPACE/.cache/a1/npm}"
-export PIP_DEFAULT_TIMEOUT="${PIP_DEFAULT_TIMEOUT:-60}"
+export PIP_DEFAULT_TIMEOUT="${PIP_DEFAULT_TIMEOUT:-180}"
 export PIP_RETRIES="${PIP_RETRIES:-2}"
 export npm_config_fetch_retries="${npm_config_fetch_retries:-2}"
-export npm_config_fetch_timeout="${npm_config_fetch_timeout:-60000}"
+export npm_config_fetch_timeout="${npm_config_fetch_timeout:-180000}"
 export GIT_TERMINAL_PROMPT=0
 export A1_WORKSPACE A1_HELPER_DIR A1_LOG_DIR A1_STATE_DIR
 mkdir -p "$A1_LOG_DIR" "$A1_STATE_DIR" "$PIP_CACHE_DIR" "$UV_CACHE_DIR" "$npm_config_cache" || { return 1 2>/dev/null || exit 1; }
@@ -19,9 +19,9 @@ a1_run() {
     local label="$1" seconds="$2" attempts="$3" key count=0 rc=1 state log_file
     shift 3
     if [ -n "${A1_RUN_KEY:-}" ]; then
-        key=$(printf '%s' "$A1_RUN_KEY" | sha256sum)
+        key=$(printf '%s\0' "$A1_RUN_KEY" "$seconds" | sha256sum)
     else
-        key=$(printf '%s\0' "$label" "$@" | sha256sum)
+        key=$(printf '%s\0' "$label" "$seconds" "$@" | sha256sum)
     fi
     key=${key%% *}
     state="$A1_STATE_DIR/$key.attempts"
@@ -51,7 +51,7 @@ a1_run() {
 a1_clone() {
     local url="$1" destination="${2:-${1##*/}}"
     destination=${destination%.git}
-    a1_run "Git 다운로드: ${destination##*/}" "${A1_GIT_TIMEOUT:-600}" 3 \
+    a1_run "Git 다운로드: ${destination##*/}" "${A1_GIT_TIMEOUT:-1800}" 3 \
         bash -c '
             target="$2"
             stage="${target}.a1-clone-$$"
@@ -84,7 +84,7 @@ a1_pip_requirements() {
     shift 5
     filtered=$(mktemp /tmp/a1-requirements.XXXXXX) || return 1
     digest=$(sha256sum "$requirements") || { rm -f -- "$filtered"; return 1; }
-    if ! A1_RUN_KEY="$label:prepare:${digest%% *}:$exclude" a1_run "$label 목록 확인" 120 3 python3 "$A1_HELPER_DIR/requirements_cache.py" \
+    if ! A1_RUN_KEY="$label:prepare:${digest%% *}:$exclude" a1_run "$label 목록 확인" "${A1_PREPARE_TIMEOUT:-600}" 3 python3 "$A1_HELPER_DIR/requirements_cache.py" \
         "$requirements" "$filtered" "$exclude"; then
         rm -f -- "$filtered"
         return 1
@@ -115,13 +115,13 @@ a1_ui_prepare() {
         if python3 "$cache" restore "$ui"; then rebuilt=1; fi
         if ! python3 "$cache" check "$ui"; then
             NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=\"$A1_HELPER_DIR/npm_compat.cjs\"" \
-                a1_run 'OSTRIS npm 설치' "${A1_NPM_TIMEOUT:-1200}" 3 npm install --prefer-offline || return 1
-            a1_run 'OSTRIS UI 빌드' "${A1_UI_TIMEOUT:-1200}" 2 npm run build || return 1
+                a1_run 'OSTRIS npm 설치' "${A1_NPM_TIMEOUT:-3600}" 3 npm install --prefer-offline || return 1
+            a1_run 'OSTRIS UI 빌드' "${A1_UI_TIMEOUT:-3600}" 2 npm run build || return 1
             rebuilt=1
         fi
     fi
     if [ "$rebuilt" -eq 1 ] || ! python3 "$cache" db-ready "$ui"; then
-        a1_run 'OSTRIS DB 준비' 300 3 npm run update_db || return 1
+        a1_run 'OSTRIS DB 준비' "${A1_DB_TIMEOUT:-900}" 3 npm run update_db || return 1
     fi
     python3 "$cache" record "$ui"
 }
@@ -155,7 +155,7 @@ a1_ui_finish() {
 }
 
 a1_core_ready() {
-    timeout --signal=TERM --kill-after=10s 120s python3 - "$A1_WORKSPACE" <<'PY'
+    timeout --signal=TERM --kill-after=10s "${A1_CHECK_TIMEOUT:-300}s" python3 - "$A1_WORKSPACE" <<'PY'
 import sys
 from importlib.metadata import version
 from pathlib import Path
@@ -170,7 +170,7 @@ PY
 }
 
 a1_torch_ready() {
-    timeout --signal=TERM --kill-after=10s 120s python3 - <<'PY'
+    timeout --signal=TERM --kill-after=10s "${A1_CHECK_TIMEOUT:-300}s" python3 - <<'PY'
 import sys
 try:
     import torch, torchvision, torchaudio
@@ -181,7 +181,7 @@ PY
 }
 
 a1_wait_services() {
-    python3 "$A1_HELPER_DIR/deploy_optimizations.py" wait-services "${1:-600}"
+    python3 "$A1_HELPER_DIR/deploy_optimizations.py" wait-services "${1:-1800}"
 }
 
 if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then

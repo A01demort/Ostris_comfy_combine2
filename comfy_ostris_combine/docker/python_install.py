@@ -79,9 +79,9 @@ def needs_pip(arguments, environment):
 def uv_environment(environment):
     result = environment.copy()
     result['UV_PYTHON_DOWNLOADS'] = 'never'
-    result['UV_HTTP_TIMEOUT'] = environment.get('PIP_DEFAULT_TIMEOUT', '60')
+    result['UV_HTTP_TIMEOUT'] = environment.get('PIP_DEFAULT_TIMEOUT', '180')
     result['UV_HTTP_RETRIES'] = environment.get('PIP_RETRIES', '2')
-    result['UV_HTTP_CONNECT_TIMEOUT'] = '10'
+    result['UV_HTTP_CONNECT_TIMEOUT'] = '30'
     result['UV_CACHE_DIR'] = environment.get('UV_CACHE_DIR', str(Path(environment.get('PIP_CACHE_DIR', '/workspace/.cache/a1/pip')).parent / 'uv'))
     result['UV_CONCURRENT_BUILDS'] = '1'
     result['UV_CONCURRENT_INSTALLS'] = '4'
@@ -139,7 +139,7 @@ if __name__ == '__main__':
         sys.exit(2)
     try:
         seconds = float(sys.argv[1])
-        if not 0 < seconds <= 5400:
+        if not 0 < seconds <= 21600:
             raise ValueError('invalid timeout')
         sys.exit(install(seconds, sys.argv[2:]))
     except (OSError, ValueError):
