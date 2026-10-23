@@ -1,5 +1,12 @@
 #!/bin/bash
 source "${A1_HELPER_DIR:-/opt/a1-template/docker}/deploy_helpers.sh" || exit 1
+if ! declare -F a1_python_install >/dev/null; then
+    a1_python_install() {
+        local label="$1" seconds="$2" attempts="$3"
+        shift 3
+        a1_run "$label" "$seconds" "$attempts" pip install "$@"
+    }
+fi
 if [ "${A1_INIT_GUARD:-}" != 1 ]; then
     timeout --signal=TERM --kill-after=30s "${A1_INIT_TIMEOUT:-5400}s" env A1_INIT_GUARD=1 /bin/bash "$0" "$@"
     A1_INIT_RC=$?
@@ -78,7 +85,7 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
     # ──────────────────────────────────────────
     echo "🔥 [STEP 2] OSTRIS requirements.txt 설치"
     if [ -f /workspace/ostris/requirements.txt ]; then
-        a1_run "OSTRIS Python 설치" 1200 3 pip install -r /workspace/ostris/requirements.txt \
+        a1_python_install "OSTRIS Python 설치" 1200 3 -r /workspace/ostris/requirements.txt \
             --break-system-packages \
             || { echo '⚠️ OSTRIS requirements 설치 실패'; exit 1; }
     fi
@@ -150,7 +157,7 @@ PYEOF
     # STEP 4: JupyterLab 설치 및 설정
     # ──────────────────────────────────────────
     echo "📦 [STEP 4] JupyterLab 설치"
-    a1_run "JupyterLab 설치" 1200 3 pip install \
+    a1_python_install "JupyterLab 설치" 1200 3 \
         jupyterlab==3.6.6 \
         jupyter-server==2.21.1 \
         --break-system-packages \
@@ -185,14 +192,14 @@ EOF
             || { echo '⚠️ ComfyUI requirements 설치 실패'; exit 1; }
     fi
 
-    a1_run "초기 의존성 설치" 1200 3 pip install torchsde av pydantic-settings --break-system-packages \
+    a1_python_install "초기 의존성 설치" 1200 3 torchsde av pydantic-settings --break-system-packages \
         || { echo '⚠️ 초기 의존성 설치 실패'; exit 1; }
 
     # ──────────────────────────────────────────
     # STEP 6: ComfyUI 커스텀 노드용 추가 패키지
     # ──────────────────────────────────────────
     echo "📦 [STEP 6] 추가 파이썬 패키지 설치"
-    a1_run "추가 Python 설치" 1200 3 pip install --break-system-packages \
+    a1_python_install "추가 Python 설치" 1200 3 --break-system-packages \
         GitPython onnx onnxruntime opencv-python tqdm requests \
         scikit-image piexif packaging \
         protobuf pandas imageio[ffmpeg] pyzbar pillow numba \

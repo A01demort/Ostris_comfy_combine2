@@ -5,6 +5,7 @@ A1_WORKSPACE="${A1_WORKSPACE:-/workspace}"
 A1_LOG_DIR="${A1_LOG_DIR:-$A1_WORKSPACE/A1/logs}"
 A1_STATE_DIR="${A1_STATE_DIR:-$A1_WORKSPACE/A1/.startup-state}"
 export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$A1_WORKSPACE/.cache/a1/pip}"
+export UV_CACHE_DIR="${UV_CACHE_DIR:-$A1_WORKSPACE/.cache/a1/uv}"
 export npm_config_cache="${npm_config_cache:-$A1_WORKSPACE/.cache/a1/npm}"
 export PIP_DEFAULT_TIMEOUT="${PIP_DEFAULT_TIMEOUT:-60}"
 export PIP_RETRIES="${PIP_RETRIES:-2}"
@@ -12,7 +13,7 @@ export npm_config_fetch_retries="${npm_config_fetch_retries:-2}"
 export npm_config_fetch_timeout="${npm_config_fetch_timeout:-60000}"
 export GIT_TERMINAL_PROMPT=0
 export A1_WORKSPACE A1_HELPER_DIR A1_LOG_DIR A1_STATE_DIR
-mkdir -p "$A1_LOG_DIR" "$A1_STATE_DIR" "$PIP_CACHE_DIR" "$npm_config_cache" || { return 1 2>/dev/null || exit 1; }
+mkdir -p "$A1_LOG_DIR" "$A1_STATE_DIR" "$PIP_CACHE_DIR" "$UV_CACHE_DIR" "$npm_config_cache" || { return 1 2>/dev/null || exit 1; }
 
 a1_run() {
     local label="$1" seconds="$2" attempts="$3" key count=0 rc=1 state log_file
@@ -72,6 +73,12 @@ a1_clone_wait() {
     return "$rc"
 }
 
+a1_python_install() {
+    local label="$1" seconds="$2" attempts="$3"
+    shift 3
+    a1_run "$label" "$seconds" "$attempts" python3 "$A1_HELPER_DIR/python_install.py" "$seconds" "$@"
+}
+
 a1_pip_requirements() {
     local label="$1" seconds="$2" attempts="$3" exclude="$4" requirements="$5" filtered rc digest
     shift 5
@@ -84,7 +91,7 @@ a1_pip_requirements() {
     fi
     digest=$(sha256sum "$filtered") || { rm -f -- "$filtered"; return 1; }
     A1_RUN_KEY="$label:${digest%% *}" \
-        a1_run "$label" "$seconds" "$attempts" pip install "$@" -r "$filtered" --break-system-packages
+        a1_python_install "$label" "$seconds" "$attempts" "$@" -r "$filtered" --break-system-packages
     rc=$?
     rm -f -- "$filtered"
     return "$rc"
@@ -94,8 +101,9 @@ a1_node_cache() {
     local key
     key=$(python3 "$A1_HELPER_DIR/requirements_cache.py" --environment) || return 1
     export PIP_CACHE_DIR="$A1_WORKSPACE/.cache/a1/node-pip/$key"
+    export UV_CACHE_DIR="$A1_WORKSPACE/.cache/a1/node-uv/$key"
     export TORCH_EXTENSIONS_DIR="$A1_WORKSPACE/.cache/a1/torch-extensions/$key"
-    mkdir -p "$PIP_CACHE_DIR" "$TORCH_EXTENSIONS_DIR"
+    mkdir -p "$PIP_CACHE_DIR" "$UV_CACHE_DIR" "$TORCH_EXTENSIONS_DIR"
 }
 
 a1_ui_prepare() {
@@ -177,7 +185,7 @@ a1_wait_services() {
 
 if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then
     if [ "${1:-}" = reset ]; then
-        for state in "$A1_STATE_DIR"/*.attempts; do [ ! -f "$state" ] || rm -f -- "$state"; done
+        for state in "$A1_STATE_DIR"/*.attempts "$A1_STATE_DIR"/*.pip-backend; do [ ! -f "$state" ] || rm -f -- "$state"; done
         printf '✅ 초기 설치 재시도 횟수를 초기화했습니다.\n'
     else
         exit 2

@@ -34,4 +34,4 @@ jobs:
           push: true
           platforms: linux/amd64
           provenance: false
-          tags: ghcr.io/a01demort/ostris_combine_comfy:v1.0.31
+          tags: ghcr.io/a01demort/ostris_combine_comfy:v1.0.32

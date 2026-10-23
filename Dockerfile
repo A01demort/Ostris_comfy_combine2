@@ -27,6 +27,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 # Python 심볼릭 링크
 RUN ln -sf /usr/bin/python3 /usr/bin/python
 
+COPY --from=ghcr.io/astral-sh/uv:0.13.5@sha256:a12ede1e6dc90d3b3e600d0901731e71f0ab0f4d72683ea097b76c19c43cc8df /uv /usr/local/bin/uv
+RUN uv --version
+
 # ================================
 # bash 프롬프트(PS1) 및 터미널 환경 설정
 # JupyterLab Terminal에서 경로가 제대로 표시되도록 .bashrc 구성
@@ -94,6 +97,10 @@ RUN chmod +x \
     /workspace/Move_LoRA_a1.sh \
     /workspace/ostris/docker/install.sh \
     /workspace/ostris/start.sh
+
+RUN --mount=type=tmpfs,target=/tmp/a1-uv-check,size=134217728 \
+    timeout --signal=TERM --kill-after=10s 120s \
+    python3 /opt/a1-template/docker/verify_python_installer.py
 
 RUN --mount=type=tmpfs,target=/workspace/ostris/ui,size=2147483648 \
     timeout --signal=TERM --kill-after=30s 1800s \
