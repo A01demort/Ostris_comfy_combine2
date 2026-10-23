@@ -14,8 +14,24 @@ export GIT_TERMINAL_PROMPT=0
 export A1_WORKSPACE A1_HELPER_DIR A1_LOG_DIR A1_STATE_DIR
 mkdir -p "$A1_LOG_DIR" "$A1_STATE_DIR" "$PIP_CACHE_DIR" "$npm_config_cache" || { return 1 2>/dev/null || exit 1; }
 
+a1_limit_seconds() {
+    python3 - "$1" <<'PY'
+import math
+import os
+import sys
+import time
+from pathlib import Path
+seconds = float(sys.argv[1])
+deadline = os.environ.get('A1_STARTUP_DEADLINE')
+ready = os.environ.get('A1_STARTUP_READY_FILE')
+if deadline and not (ready and Path(ready).is_file()):
+    seconds = min(seconds, max(0, math.ceil(float(deadline) - time.monotonic())))
+print(max(0, int(seconds)))
+PY
+}
+
 a1_run() {
-    local label="$1" seconds="$2" attempts="$3" key count=0 rc=1 state log_file
+    local label="$1" seconds="$2" attempts="$3" key count=0 rc=1 state log_file effective
     shift 3
     if [ -n "${A1_RUN_KEY:-}" ]; then
         key=$(printf '%s\0' "$A1_RUN_KEY" "$seconds" | sha256sum)
@@ -28,10 +44,12 @@ a1_run() {
     if [ -f "$state" ]; then read -r count < "$state"; fi
     [[ "$count" =~ ^[0-9]+$ ]] || count=0
     while [ "$count" -lt "$attempts" ]; do
+        effective=$(a1_limit_seconds "$seconds") || return 1
+        [ "$effective" -gt 0 ] || return 124
         count=$((count + 1))
         printf '%s\n' "$count" > "$state" || return 73
-        printf '📋 %s (%s/%s, 최대 %s초)\n' "$label" "$count" "$attempts" "$seconds"
-        timeout --signal=TERM --kill-after=30s "${seconds}s" "$@" 2>&1 | tee -a "$log_file"
+        printf '📋 %s (%s/%s, 최대 %s초)\n' "$label" "$count" "$attempts" "$effective"
+        timeout --signal=TERM --kill-after=30s "${effective}s" "$@" 2>&1 | tee -a "$log_file"
         local statuses=("${PIPESTATUS[@]}")
         rc=${statuses[0]}
         if [ "$rc" -eq 0 ] && [ "${statuses[1]}" -eq 0 ]; then

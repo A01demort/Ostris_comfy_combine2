@@ -1,7 +1,7 @@
 #!/bin/bash
 source "${A1_HELPER_DIR:-/opt/a1-template/docker}/deploy_helpers.sh" || exit 1
 if [ "${A1_INIT_GUARD:-}" != 1 ]; then
-    timeout --signal=TERM --kill-after=30s "${A1_INIT_TIMEOUT:-21600}s" env A1_INIT_GUARD=1 /bin/bash "$0" "$@"
+    timeout --signal=TERM --kill-after=30s "${A1_INIT_TIMEOUT:-3600}s" env A1_INIT_GUARD=1 /bin/bash "$0" "$@"
     A1_INIT_RC=$?
     if [ "$A1_INIT_RC" -ne 0 ]; then
         printf '❌ 초기 설치 중단 (종료 코드 %s). /workspace/A1/logs를 확인하세요.\n' "$A1_INIT_RC" >&2
@@ -63,7 +63,7 @@ if [ ! -f "/tmp/.a1_sys_pkg_checked" ]; then
     echo "🔥 [STEP 1] PyTorch 2.9.1 + CUDA 12.8 설치 (OSTRIS 공식 Dockerfile 기준)"
     if ! a1_torch_ready; then
         a1_run "PyTorch 정리" "${A1_CHECK_TIMEOUT:-300}" 1 pip uninstall -y torch torchvision torchaudio 2>/dev/null || true
-        a1_run "PyTorch 설치" "${A1_TORCH_TIMEOUT:-5400}" 3 pip install \
+        a1_run "PyTorch 설치" "${A1_TORCH_TIMEOUT:-3600}" 3 pip install \
             torch==2.9.1 \
             torchvision==0.24.1 \
             torchaudio==2.9.1 \
@@ -287,7 +287,7 @@ for d in */; do
 
         echo "📦 $d 의존성 설치 중..."
         # torch/torchvision/torchaudio 버전 보호 (OSTRIS 2.9.1 유지)
-        if a1_pip_requirements "$d 의존성 설치" "${A1_NODE_TIMEOUT:-5400}" 2 '^(torch|torchvision|torchaudio)([><=\s]|$)' "$req_file" "${A1_NODE_BUILD_ARGS[@]}"; then
+        if a1_pip_requirements "$d 의존성 설치" "${A1_NODE_TIMEOUT:-3600}" 2 '^(torch|torchvision|torchaudio)([><=\s]|$)' "$req_file" "${A1_NODE_BUILD_ARGS[@]}"; then
             printf '%s\n' "$A1_NODE_MARKER" > "$marker_file"
         else
             echo "⚠️ $d 의존성 설치 실패 (무시하고 진행)"

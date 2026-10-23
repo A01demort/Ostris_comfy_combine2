@@ -102,6 +102,8 @@ RUN --mount=type=tmpfs,target=/workspace/ostris/ui,size=2147483648 \
     { rm -f /opt/a1-ui-cache/ui.tar.gz /opt/a1-ui-cache/ui.tar.json; \
       echo '⏩ UI 이미지 캐시 생략: 런타임 설치로 진행'; }
 
+RUN python3 /opt/a1-template/docker/verify_startup_deadline.py
+
 # 볼륨 / 포트
 VOLUME ["/workspace"]
 EXPOSE 8188
@@ -112,11 +114,11 @@ EXPOSE 8675
 # CMD: init 완료 후 exec 새 bash로 서비스 시작
 # → PATH/pip 설치 경로가 완전히 반영된 환경에서 실행됨
 # ================================
-CMD ["/bin/bash", "-c", "\
+CMD ["/usr/bin/python3", "/opt/a1-template/docker/startup_deadline.py", "/bin/bash", "-c", "\
 echo '🌀 A1(AI는 에이원) : https://www.youtube.com/@A01demort' && \
 /bin/bash /usr/local/bin/a1-workspace-init.sh && \
 { /workspace/A1/init_or_check_nodes.sh || { \
 printf '❌ 설치 재시도 한도에 도달했습니다. /workspace/A1/logs를 확인한 후 수동 복구하세요. 컨테이너를 진단 대기 상태로 유지합니다.\n'; \
-exec sleep infinity; }; } && \
+exit 1; }; } && \
 echo '✅ 의존성 확인 완료 - 새 환경으로 서비스 시작' && \
 exec /bin/bash /workspace/A1/start_services.sh"]
