@@ -1,4 +1,9 @@
 #!/bin/bash
+A1_DOWNLOAD_ATTEMPT=${A1_DOWNLOAD_ATTEMPT:-1}
+if ! [[ "$A1_DOWNLOAD_ATTEMPT" =~ ^[1-3]$ ]]; then
+    printf '❌ 다운로드 재실행은 최대 3회입니다.\n' >&2
+    exit 1
+fi
 
 # ====================================
 # 🧳 Hugging Face API 키 설정
@@ -30,7 +35,7 @@ start_time=$(date +%s)
 # ====================================
 if ! command -v aria2c &> /dev/null; then
     echo "📦 aria2c가 설치되지 않았습니다. 설치를 시작합니다..."
-    sudo apt update && sudo apt install -y aria2
+    timeout --signal=TERM --kill-after=30s 600s sudo bash -c 'apt update && apt install -y aria2'
     if [ $? -ne 0 ]; then
         echo "❌ aria2 설치 실패. 수동 설치 필요."
         exit 1
@@ -46,7 +51,7 @@ fi
 # ====================================
 echo "🔍 Hugging Face API 키 유효성 검사 중..."
 
-test_response=$(curl -s -o /dev/null -w "%{http_code}" \
+test_response=$(curl --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 5 --retry-max-time 100 -s -o /dev/null -w "%{http_code}" \
     -H "Authorization: Bearer $HUGGINGFACE_TOKEN" \
     "https://huggingface.co/api/whoami-v2")
 
@@ -99,7 +104,7 @@ rm -f "$INPUT_FILE" "$LOG_FILE" "$RESULT_FILE"
 # ====================================
 for item in "${downloads[@]}"; do
   IFS="|" read -r url path <<< "$item"
-  if [ -f "$path" ]; then
+  if [ -s "$path" ] && [ ! -f "$path.aria2" ]; then
     echo "[완료] 이미 존재: $path" | tee -a "$RESULT_FILE"
   else
     mkdir -p "$(dirname "$path")"
@@ -112,12 +117,15 @@ done
 # ====================================
 # 🚀 다운로드 시작
 # ====================================
+A1_DOWNLOAD_RC=0
 if [ -s "$INPUT_FILE" ]; then
   echo -e "\n🚀 다운로드 시작...\n"
-  aria2c -x 8 -j "$MAX_PARALLEL" -i "$INPUT_FILE" \
+  timeout --signal=TERM --kill-after=30s 1800s aria2c --max-tries=3 --retry-wait=5 --connect-timeout=10 --timeout=60 -x 8 -j "$MAX_PARALLEL" -i "$INPUT_FILE" \
          --console-log-level=notice --summary-interval=1 \
          --header="Authorization: Bearer $HUGGINGFACE_TOKEN" \
          | tee -a "$LOG_FILE"
+  A1_DOWNLOAD_STATUS=("${PIPESTATUS[@]}")
+  if [ "${A1_DOWNLOAD_STATUS[0]}" -ne 0 ] || [ "${A1_DOWNLOAD_STATUS[1]}" -ne 0 ]; then A1_DOWNLOAD_RC=1; fi
 else
   echo "📂 다운로드할 항목이 없습니다."
 fi
@@ -131,7 +139,7 @@ failures=()
 
 for item in "${downloads[@]}"; do
   IFS="|" read -r url path <<< "$item"
-  if [ -f "$path" ]; then
+  if [ -s "$path" ] && [ ! -f "$path.aria2" ]; then
     echo "[완료] $path" | tee -a "$RESULT_FILE"
     ((success++))
   else
@@ -171,7 +179,7 @@ broken_files=()
 
 for item in "${downloads[@]}"; do
   IFS="|" read -r url path <<< "$item"
-  if [[ -f "$path" && ! -s "$path" ]] || [[ -f "$path.aria2" ]]; then
+  if [[ ! -s "$path" ]] || [[ -f "$path.aria2" ]]; then
     broken_files+=("$path")
   fi
 done
@@ -183,22 +191,31 @@ if [ "${#broken_files[@]}" -gt 0 ]; then
   done
 
   echo -e "\n❓ 자동 삭제 후 재다운로드 하시겠습니까? (Y/N): \c"
-  read -r confirm_retry
+  confirm_retry=N
+  if [ -t 0 ]; then read -r -t 60 confirm_retry || confirm_retry=N; fi
 
   if [[ "$confirm_retry" == "Y" || "$confirm_retry" == "y" ]]; then
+    if [ "$A1_DOWNLOAD_ATTEMPT" -ge 3 ]; then
+      printf '❌ 다운로드 최대 3회 시도 후 중단\n' >&2
+      exit 1
+    fi
     echo "🗑️ 삭제 중..."
     for bf in "${broken_files[@]}"; do
       rm -f "$bf" "$bf.aria2"
       echo "삭제됨: $bf"
     done
     echo "♻️ 다시 실행합니다..."
-    bash "$0"
-    exit 0
+    A1_DOWNLOAD_ATTEMPT=$((A1_DOWNLOAD_ATTEMPT + 1)) bash "$0"
+    exit $?
   else
     echo "⛔ 수동 처리 위해 종료합니다."
-    exit 0
+    exit 1
   fi
 else
+  if [ "$A1_DOWNLOAD_RC" -ne 0 ]; then
+    printf '❌ 다운로드 명령 실패. 다운로드 로그를 확인하세요.\n' >&2
+    exit 1
+  fi
   echo "✅ 모든 파일이 정상적으로 다운되었습니다. (All good)"
    # ====================================
   # 🎓 AI 교육 & 커뮤니티 안내 (Community & EDU)

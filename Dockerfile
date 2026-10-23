@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     python3 \
     python3-pip \
     python3-dev \
+    util-linux \
     nano \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -93,6 +94,12 @@ RUN chmod +x \
     /workspace/Move_LoRA_a1.sh \
     /workspace/ostris/docker/install.sh \
     /workspace/ostris/start.sh
+
+RUN --mount=type=tmpfs,target=/workspace/ostris/ui,size=2147483648 \
+    timeout --signal=TERM --kill-after=30s 1800s \
+    python3 /opt/a1-template/docker/build_ui_cache.py || \
+    { rm -f /opt/a1-ui-cache/ui.tar.gz /opt/a1-ui-cache/ui.tar.json; \
+      echo '⏩ UI 이미지 캐시 생략: 런타임 설치로 진행'; }
 
 # 볼륨 / 포트
 VOLUME ["/workspace"]

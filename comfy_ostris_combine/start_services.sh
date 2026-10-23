@@ -1,4 +1,5 @@
 #!/bin/bash
+source "${A1_HELPER_DIR:-/opt/a1-template/docker}/deploy_helpers.sh" || exit 1
 # ============================================================
 # start_services.sh
 # init_or_check_nodes.sh 완료 후 실행됨
@@ -40,7 +41,6 @@ else
     IS_RESTART=false
     echo "🆕 최초 실행(Fresh Pod) 감지됨."
     # 마커 파일 생성 (다음 재시작 시 Restart로 인식)
-    touch "$MARKER_FILE"
 fi
 
 echo ""
@@ -67,7 +67,7 @@ rm -f /root/.jupyter/jupyter_server_config.py
     --port=8188 &
 
 # ── OSTRIS UI ────────────────────────────────────────────────
-(cd /workspace/ostris/ui && npm run start) &
+(cd /workspace/ostris/ui && npm run start || { printf '❌ OSTRIS 실행 실패: 최대 3회 실행 후 중단\n' >&2; exit 1; }) &
 
 # ====================================
 # ⏳ ComfyUI 완전히 뜰 때까지 대기
@@ -76,15 +76,11 @@ rm -f /root/.jupyter/jupyter_server_config.py
 echo ""
 echo "⏳ ComfyUI 로딩 대기 중 (custom node 포함, 최대 10분)..."
 TIMEOUT=600
-ELAPSED=0
-while ! curl -s http://localhost:8188 > /dev/null 2>&1; do
-    sleep 3
-    ELAPSED=$((ELAPSED + 3))
-    if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
-        echo "⚠️ ComfyUI 기동 타임아웃 (계속 진행)"
-        break
-    fi
-done
+if ! a1_wait_services "$TIMEOUT"; then
+    echo "⚠️ ComfyUI 기동 타임아웃 (계속 진행)"
+    printf '❌ 서비스 준비 실패. 준비완료 배너를 중단합니다.\n' >&2
+    exit 1
+fi
 echo "✅ ComfyUI 응답 확인됨"
 
 # ====================================
@@ -108,13 +104,13 @@ if [ "$IS_RESTART" = false ]; then
     else
         # ── 키가 입력됐어도 실제로 HF 서버에서 유효한지 검증 ──────
         echo "🔍 Hugging Face API 키 실제 인증 검사 중..."
-        HF_AUTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+        HF_AUTH_CODE=$(curl --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 5 --retry-max-time 100 -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer $HF_KEY" \
             "https://huggingface.co/api/whoami-v2")
 
         if [[ "$HF_AUTH_CODE" == "200" ]]; then
             echo "✅ HF 토큰 인증 성공 (HTTP $HF_AUTH_CODE). Z-Image-Turbo 모델 다운로드를 시작합니다..."
-            bash /workspace/A1/ZIT_down_a1.sh
+            bash /workspace/A1/ZIT_down_a1.sh || exit 1
             echo "✅ 모델 다운로드 완료"
         else
             echo "🚫 HF 토큰 인증 실패 (HTTP $HF_AUTH_CODE). 잘못된 키이므로 다운로드를 건너뜁니다."
@@ -124,6 +120,7 @@ fi
 
 # ── 최종 배너 출력 ───────────────────────────────────────────
 # Restart / Fresh 모두 여기서 준비완료 출력
+touch "$MARKER_FILE"
 bash /workspace/A1/Startup+banner.sh
 
 # 모든 백그라운드 프로세스 대기

@@ -13,6 +13,7 @@ mkdir -p "$WORKSPACE/A1" "$WORKSPACE/ostris" \
     "$WORKSPACE/lora_training/output" "$WORKSPACE/lora_training/datasets"
 python3 - "$SEED" "$WORKSPACE" <<'PY'
 import json
+import runpy
 import shutil
 import sys
 from pathlib import Path
@@ -63,6 +64,7 @@ for relative in ('A1/init_or_check_nodes.sh', 'ostris/init_or_check_nodes.sh'):
             backup.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, backup)
         path.write_bytes(updated)
+runpy.run_path(str(seed / 'docker/startup_upgrade.py'))['migrate'](workspace)
 PY
 
 chmod +x "$WORKSPACE"/A1/*.sh "$WORKSPACE/Move_LoRA_a1.sh" \
