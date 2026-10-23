@@ -83,7 +83,8 @@ a1_pip_requirements() {
         return 1
     fi
     digest=$(sha256sum "$filtered") || { rm -f -- "$filtered"; return 1; }
-    A1_RUN_KEY="$label:${digest%% *}" \
+    A1_REAL_GIT="$(command -v git)" PATH="$A1_HELPER_DIR/git-compat:$PATH" \
+        A1_RUN_KEY="$label:git-full-v1:${digest%% *}" \
         a1_run "$label" "$seconds" "$attempts" pip install "$@" -r "$filtered" --break-system-packages
     rc=$?
     rm -f -- "$filtered"

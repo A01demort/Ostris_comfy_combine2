@@ -85,6 +85,7 @@ COPY comfy_ostris_combine/ /opt/a1-template/
 COPY comfy_ostris_combine/docker/workspace_init.sh /usr/local/bin/a1-workspace-init.sh
 
 RUN chmod +x \
+    /opt/a1-template/docker/git-compat/git \
     /workspace/A1/init_or_check_nodes.sh \
     /workspace/A1/Startup+banner.sh \
     /workspace/A1/ZIT_down_a1.sh \
@@ -114,6 +115,8 @@ EXPOSE 8675
 CMD ["/bin/bash", "-c", "\
 echo '🌀 A1(AI는 에이원) : https://www.youtube.com/@A01demort' && \
 /bin/bash /usr/local/bin/a1-workspace-init.sh && \
-/workspace/A1/init_or_check_nodes.sh && \
+{ /workspace/A1/init_or_check_nodes.sh || { \
+printf '❌ 설치 재시도 한도에 도달했습니다. /workspace/A1/logs를 확인한 후 수동 복구하세요. 컨테이너를 진단 대기 상태로 유지합니다.\n'; \
+exec sleep infinity; }; } && \
 echo '✅ 의존성 확인 완료 - 새 환경으로 서비스 시작' && \
 exec /bin/bash /workspace/A1/start_services.sh"]

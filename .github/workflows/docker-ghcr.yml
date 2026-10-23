@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - fix/v1.0.31-git-download
 
 jobs:
   build:

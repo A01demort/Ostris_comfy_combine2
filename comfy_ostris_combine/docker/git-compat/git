@@ -1,0 +1,16 @@
+#!/usr/bin/python3
+import os
+import re
+import sys
+
+real_git = os.environ.get('A1_REAL_GIT', '')
+if not os.path.isabs(real_git) or os.path.realpath(real_git) == os.path.realpath(__file__):
+    print('Git executable unavailable', file=sys.stderr)
+    sys.exit(127)
+
+arguments = sys.argv[1:]
+repositories = r'https://github\.com/(?:facebookresearch/sam2|WASasquatch/(?:img2texture|cstr|ffmpy))(?:\.git)?/?'
+if arguments[:1] == ['clone'] and any(re.fullmatch(repositories, item, re.IGNORECASE) for item in arguments):
+    arguments = [item for item in arguments if not item.startswith('--filter=')]
+
+os.execv(real_git, [real_git, *arguments])
